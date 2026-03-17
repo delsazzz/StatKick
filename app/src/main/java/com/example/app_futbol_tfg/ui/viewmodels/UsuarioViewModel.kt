@@ -23,7 +23,8 @@ class UsuarioViewModel(
         nombreUsuario: String,
         email: String,
         passwordHash: String,
-        fechaRegistro: String
+        fechaRegistro: String,
+        rol: String = "usuario"
     ) {
         viewModelScope.launch {
             repository.insertUsuario(
@@ -31,7 +32,8 @@ class UsuarioViewModel(
                     nombreUsuario = nombreUsuario,
                     email = email,
                     passwordHash = passwordHash,
-                    fechaRegistro = fechaRegistro
+                    fechaRegistro = fechaRegistro,
+                    rol = rol
                 )
             )
         }

@@ -23,4 +23,5 @@ data class UsuarioEntity(
     val passwordHash: String,
     @ColumnInfo(name = "fecha_registro")
     val fechaRegistro: String
+    val rol: String = "usuario"
 )
