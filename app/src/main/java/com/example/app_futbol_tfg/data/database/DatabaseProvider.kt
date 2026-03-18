@@ -2,6 +2,11 @@ package com.example.app_futbol_tfg.data.database
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 // Creamos una clase singleton automática, solo puede haber una instancia
 object DatabaseProvider {
 
@@ -19,6 +24,18 @@ object DatabaseProvider {
             )
                 // Si el esquema de la BBDD cambiara y la versión no coincide, Room borra la BBDD y la recrea
                 .fallbackToDestructiveMigration()
+                // Aquí añadimos el callback para ejecutar el seed
+                .addCallback(object : RoomDatabase.Callback() {
+
+                    override fun onCreate(db: SupportSQLiteDatabase) {
+                        super.onCreate(db)
+
+                        CoroutineScope(Dispatchers.IO).launch {
+                            val database = getDatabase(context)
+                            SeedData.seed(database)
+                        }
+                    }
+                })
                 .build()
 
             INSTANCE = instance

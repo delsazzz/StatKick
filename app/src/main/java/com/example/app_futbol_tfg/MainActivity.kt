@@ -12,9 +12,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.app_futbol_tfg.ui.ui.theme.App_Futbol_TFGTheme
+import androidx.lifecycle.lifecycleScope
+import com.example.app_futbol_tfg.data.database.DatabaseProvider
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        val db = DatabaseProvider.getDatabase(applicationContext)
+        lifecycleScope.launch {
+            val pais = db.paisDao().getById(1)
+            println("Pais 1: $pais")
+        }
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
