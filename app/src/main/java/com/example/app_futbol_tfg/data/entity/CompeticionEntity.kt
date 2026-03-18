@@ -10,11 +10,13 @@ import androidx.room.PrimaryKey
 @Entity(
     tableName = "Competiciones", // Nombre de la tabla
     foreignKeys = [
-        ForeignKey(entity = PaisEntity::class, // Tabla relacionada de la FK
-        parentColumns = ["id"], // Columna referencia de la FK
-        childColumns = ["id_pais"]), // Columna de esta tabla que referencia a la FK
-        onDelete = ForeignKey.SET_NULL, // Si se elimina el país referenciado, el valor pasa a NULL
-        onUpdate = ForeignKey.CASCADE // Si el id del país cambia, se actualiza automáticamente
+        ForeignKey(
+            entity = PaisEntity::class, // Tabla relacionada de la FK
+            parentColumns = ["id"], // Columna referencia de la FK
+            childColumns = ["id_pais"], // Columna de esta tabla que referencia a la FK
+            onDelete = ForeignKey.SET_NULL, // Si se elimina el país referenciado, el valor pasa a NULL
+            onUpdate = ForeignKey.CASCADE // Si el id del país cambia, se actualiza automáticamente
+        )
     ],
     indices = [Index("id_pais")] // Index crear un índice en la columna para mejorar rendimiento en búsquedas
 )

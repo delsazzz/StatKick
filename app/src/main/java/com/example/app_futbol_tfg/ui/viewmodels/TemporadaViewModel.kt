@@ -11,10 +11,10 @@ class TemporadaViewModel(
     private val repository: TemporadaRepository
 ) : ViewModel() {
 
-    val temporadas: Flow<List<TemporadaEntity>> = repository.getAllTemporadas()
+    val temporadas: Flow<List<TemporadaEntity>> = repository.getAll()
 
     suspend fun getTemporadaById(id: Int): TemporadaEntity? =
-        repository.getTemporadaById(id)
+        repository.getById(id)
 
     suspend fun getByTemporada(temporada: String): TemporadaEntity? =
         repository.getByTemporada(temporada)

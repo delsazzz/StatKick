@@ -11,7 +11,7 @@ class UsuarioViewModel(
 ) : ViewModel() {
 
     suspend fun getUsuarioById(id: Int): UsuarioEntity? =
-        repository.getUsuarioById(id)
+        repository.getById(id)
 
     suspend fun getByUsername(nombreUsuario: String): UsuarioEntity? =
         repository.getByUsername(nombreUsuario)
