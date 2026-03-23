@@ -46,7 +46,7 @@ import com.example.app_futbol_tfg.data.entity.UsuarioPartidoEntity
         UsuarioPartidoEntity::class
     ],
     // La versión indica la de la BBDD, si hubiera cambios en tablas, columnas o relaciones habría que modificarla
-    version = 1,
+    version = 2,
     // exportSchema lo que hace es exportar el esquema de la BBDD a JSON
     exportSchema = false
 )

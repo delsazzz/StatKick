@@ -49,4 +49,5 @@ data class EquipoEntity(
     val idLocalidad: Int?,
     @ColumnInfo(name = "id_pais")
     val idPais: Int?
+    val escudo: String? = null
 )

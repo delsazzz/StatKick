@@ -10,4 +10,5 @@ data class PaisEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val nombre: String
+    val bandera: String? = null
 )
