@@ -1,13 +1,11 @@
-package com.tfg.app.ui.screens
+package com.example.app_futbol_tfg.ui.screens.splash
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
@@ -18,42 +16,55 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.tfg.app.R
+import com.example.app_futbol_tfg.R
+import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
+import com.example.app_futbol_tfg.ui.ui.theme.PrimaryDark
 
 @Composable
-fun SplashScreen(
-    modifier: Modifier = Modifier
-) {
-    val backgroundTop = Color(0xFF0F172A)   // azul marino oscuro
-    val backgroundBottom = Color(0xFF111827)
-    val accentBlue = Color(0xFF1F6FEB)
-    val textColor = Color(0xFFFFFFFF)
-
+fun SplashScreen() {
+    // BoxWithConstraints sirve para controlar la adaptabilidad de la pantalla
+    // Aprovecha el espacio disponible y se adapta según el móvil
     BoxWithConstraints(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .background(
+                // Aplicamos un degradado al fondo
                 brush = Brush.verticalGradient(
-                    colors = listOf(backgroundTop, backgroundBottom)
+                    colors = listOf(
+                        PrimaryDark, // Parte superior
+                        BlueGrey // Parte inferior
+                    )
                 )
             )
-            .safeDrawingPadding()
+            // Evitamos que los elementos interactivos se superpongan
+            .safeDrawingPadding() 
     ) {
-        val isCompactHeight = maxHeight < 700.dp
-        val logoSize = if (isCompactHeight) 150.dp else 210.dp
-        val titleSize = if (isCompactHeight) 24.sp else 30.sp
-        val subtitleSize = if (isCompactHeight) 12.sp else 14.sp
-        val spacing = if (isCompactHeight) 18.dp else 26.dp
+
+        // Si la pantalla tiene poca altura, se reduce el tamaño
+        val isSmallScreen = maxHeight < 700.dp
+
+        // Tamaño adaptable del logo
+        val logoSize = if (isSmallScreen) 150.dp else 210.dp
+
+        // Tamaños adaptables de texto
+        val titleSize = if (isSmallScreen) 24.sp else 30.sp
+        val subtitleSize = if (isSmallScreen) 12.sp else 14.sp
+
+        // Separación adaptable entre logo y textos
+        val spacing = if (isSmallScreen) 18.dp else 26.dp
 
         Box(
             modifier = Modifier.fillMaxSize()
         ) {
-            // detalle visual suave de fondo
+
+            // Halo visual decorativo en la parte superior
+            // No es obligatorio, pero da un acabado más "premium"
             Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -61,51 +72,49 @@ fun SplashScreen(
                     .alpha(0.10f)
                     .background(
                         brush = Brush.radialGradient(
-                            colors = listOf(accentBlue, Color.Transparent)
+                            colors = listOf(
+                                PrimaryBlue,
+                                Color.Transparent
+                            )
                         )
                     )
             )
 
+            // Columna central donde colocamos logo + nombre app + subtítulo
             Column(
-                modifier = Modifier
-                    .align(Alignment.Center),
+                modifier = Modifier.align(Alignment.Center),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(spacing)
             ) {
+
+                // LOGO DE LA APP
+                // Sustituye "logo_app" por el nombre real de tu logo en drawable si hace falta
                 Image(
                     painter = painterResource(id = R.drawable.logo_app),
-                    contentDescription = "Logo de la app",
+                    contentDescription = "Logo de la aplicación",
                     modifier = Modifier.size(logoSize),
                     contentScale = ContentScale.Fit
                 )
 
+                // NOMBRE DE LA APP
                 Text(
-                    text = "Goalytics",
+                    text = "StatKick",
+                    color = Color.White,
                     style = MaterialTheme.typography.headlineMedium.copy(
-                        color = textColor,
                         fontSize = titleSize,
                         fontWeight = FontWeight.Bold
                     )
                 )
 
+                // SUBTÍTULO
                 Text(
                     text = "Fútbol, datos y estadísticas",
+                    color = Color.White.copy(alpha = 0.78f),
                     style = MaterialTheme.typography.bodyMedium.copy(
-                        color = textColor.copy(alpha = 0.78f),
                         fontSize = subtitleSize
                     )
                 )
             }
-
-            Text(
-                text = "TFG DAM",
-                modifier = Modifier
-                    .align(Alignment.BottomCenter),
-                style = MaterialTheme.typography.bodySmall.copy(
-                    color = textColor.copy(alpha = 0.45f),
-                    fontSize = 11.sp
-                )
-            )
         }
     }
 }

@@ -20,3 +20,7 @@ val AccentGreen = Color(0xFF22C55E)
 val GoalGreen = Color(0xFF22C55E)
 val YellowCard = Color(0xFFFACC15)
 val RedCard = Color(0xFFEF4444)
+
+// Otros colores
+val BlueGrey = Color(0xFF111827)
+val GreyBlueDark = Color(0xFFF1F5F9)
