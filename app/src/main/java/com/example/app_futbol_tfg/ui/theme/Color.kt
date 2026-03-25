@@ -24,3 +24,4 @@ val RedCard = Color(0xFFEF4444)
 // Otros colores
 val BlueGrey = Color(0xFF111827)
 val GreyBlueDark = Color(0xFFF1F5F9)
+val BackgroundLight = Color(0xFFF8FAFC)

@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.app_futbol_tfg.R
+import com.example.app_futbol_tfg.ui.ui.theme.BlueGrey
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryDark
 
@@ -37,7 +38,7 @@ fun SplashScreen() {
                 // Aplicamos un degradado al fondo
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        PrimaryDark, // Parte superior
+                        PrimaryBlue, // Parte superior
                         BlueGrey // Parte inferior
                     )
                 )
@@ -50,7 +51,7 @@ fun SplashScreen() {
         val isSmallScreen = maxHeight < 700.dp
 
         // Tamaño adaptable del logo
-        val logoSize = if (isSmallScreen) 150.dp else 210.dp
+        val logoSize = if (isSmallScreen) 200.dp else 260.dp
 
         // Tamaños adaptables de texto
         val titleSize = if (isSmallScreen) 24.sp else 30.sp

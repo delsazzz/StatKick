@@ -24,21 +24,13 @@ object DatabaseProvider {
             )
                 // Si el esquema de la BBDD cambiara y la versión no coincide, Room borra la BBDD y la recrea
                 .fallbackToDestructiveMigration()
-                // Aquí añadimos el callback para ejecutar el seed
-                .addCallback(object : RoomDatabase.Callback() {
-
-                    override fun onCreate(db: SupportSQLiteDatabase) {
-                        super.onCreate(db)
-
-                        CoroutineScope(Dispatchers.IO).launch {
-                            val database = getDatabase(context)
-                            SeedData.seed(database)
-                        }
-                    }
-                })
                 .build()
 
-            INSTANCE = instance
+                INSTANCE = instance
+
+                CoroutineScope(Dispatchers.IO).launch {
+                    SeedData.seed(instance)
+                }
             instance
         }
     }

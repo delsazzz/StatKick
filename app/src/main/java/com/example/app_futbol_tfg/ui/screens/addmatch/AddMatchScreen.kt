@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.layout.verticalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -63,7 +63,7 @@ fun AddMatchScreen() {
             homeCrest = R.drawable.escudo_getafe,
             result = "2 - 1",
             awayTeam = "Leganés",
-            awayCrest = R.drawable.escudo_leganes,
+            awayCrest = R.drawable.escudo_psg,
             date = "12/03/2024",
             season = "2023/24",
             competition = "LaLiga EA Sports",
@@ -96,7 +96,7 @@ fun AddMatchScreen() {
             homeCrest = R.drawable.escudo_juventus,
             result = "0 - 2",
             awayTeam = "Inter",
-            awayCrest = R.drawable.escudo_inter,
+            awayCrest = R.drawable.escudo_inter_milan,
             date = "18/01/2024",
             season = "2023/24",
             competition = "Serie A",
@@ -107,7 +107,7 @@ fun AddMatchScreen() {
             homeCrest = R.drawable.escudo_psg,
             result = "4 - 2",
             awayTeam = "Lyon",
-            awayCrest = R.drawable.escudo_lyon,
+            awayCrest = R.drawable.escudo_olympique_lyon,
             date = "09/04/2024",
             season = "2023/24",
             competition = "Ligue 1",

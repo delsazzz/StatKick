@@ -58,10 +58,10 @@ fun MatchDetailScreen() {
         PlayerMatchUi("Djené", R.drawable.escudo_getafe),
         PlayerMatchUi("Mason Greenwood", R.drawable.escudo_getafe),
         PlayerMatchUi("Borja Mayoral", R.drawable.escudo_getafe),
-        PlayerMatchUi("Óscar Rodríguez", R.drawable.escudo_leganes),
-        PlayerMatchUi("Neyou", R.drawable.escudo_leganes),
-        PlayerMatchUi("Miguel de la Fuente", R.drawable.escudo_leganes),
-        PlayerMatchUi("Sergio González", R.drawable.escudo_leganes)
+        PlayerMatchUi("Óscar Rodríguez", R.drawable.escudo_psg),
+        PlayerMatchUi("Neyou", R.drawable.escudo_psg),
+        PlayerMatchUi("Miguel de la Fuente", R.drawable.escudo_psg),
+        PlayerMatchUi("Sergio González", R.drawable.escudo_psg)
     )
     Scaffold(
         topBar = {
@@ -160,7 +160,7 @@ fun MatchDetailScreen() {
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Image(
-                                    painter = painterResource(id = R.drawable.escudo_leganes),
+                                    painter = painterResource(id = R.drawable.escudo_psg),
                                     contentDescription = "Leganés",
                                     modifier = Modifier.size(crestSize),
                                     contentScale = ContentScale.Fit
