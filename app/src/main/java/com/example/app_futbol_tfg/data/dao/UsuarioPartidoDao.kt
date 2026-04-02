@@ -14,8 +14,7 @@ interface UsuarioPartidoDao {
 
     @Query(
         """
-        SELECT p.*
-        FROM Partidos p
+        SELECT p.* FROM Partidos p
         INNER JOIN Usuario_Partido up ON up.id_partido = p.id
         WHERE up.id_usuario = :idUsuario
         ORDER BY p.fecha DESC
@@ -28,8 +27,7 @@ interface UsuarioPartidoDao {
 
     @Query(
         """
-        SELECT * 
-        FROM Usuario_Partido
+        SELECT * FROM Usuario_Partido
         WHERE id_usuario = :idUsuario AND id_partido = :idPartido
         LIMIT 1
         """
@@ -37,7 +35,7 @@ interface UsuarioPartidoDao {
     suspend fun getRelacion(idUsuario: Int, idPartido: Int): UsuarioPartidoEntity?
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insert(relacion: UsuarioPartidoEntity): Long
+    suspend fun insert(usuarioPartido: UsuarioPartidoEntity): Long
 
     @Delete
     suspend fun delete(relacion: UsuarioPartidoEntity)

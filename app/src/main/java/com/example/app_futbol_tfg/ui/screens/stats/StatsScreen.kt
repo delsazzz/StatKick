@@ -39,6 +39,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.app_futbol_tfg.R
+import com.example.app_futbol_tfg.data.database.AppDatabase
 import com.example.app_futbol_tfg.ui.components.AppBottomBar
 import com.example.app_futbol_tfg.ui.components.AppTopBar
 import com.example.app_futbol_tfg.ui.ui.theme.BackgroundLight
@@ -48,7 +49,7 @@ import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
 import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
 
 @Composable
-fun StatsScreen() {
+fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
 
     // ----------------------------------------------------------------
     // DATOS MOCK VISUALES
@@ -110,9 +111,7 @@ fun StatsScreen() {
         bottomBar = {
             AppBottomBar(
                 selectedIndex = 2,
-                onItemSelected = {
-                    // Más adelante: navegación real
-                }
+                onItemSelected = onNavigateBottom
             )
         },
         containerColor = BackgroundLight

@@ -21,6 +21,23 @@ import com.example.app_futbol_tfg.ui.screens.addmatch.AddMatchScreen
 import com.example.app_futbol_tfg.ui.screens.map.MapScreen
 import com.example.app_futbol_tfg.ui.screens.stats.StatsScreen
 import kotlinx.coroutines.delay
+import androidx.compose.runtime.*
+import com.example.app_futbol_tfg.data.database.AppDatabase
+import com.example.app_futbol_tfg.ui.screens.addmatch.AddMatchScreen
+import com.example.app_futbol_tfg.ui.screens.home.HomeScreen
+import com.example.app_futbol_tfg.ui.screens.map.MapScreen
+import com.example.app_futbol_tfg.ui.screens.matchdetail.MatchDetailScreen
+import com.example.app_futbol_tfg.ui.screens.stats.StatsScreen
+
+private const val DEMO_USER_ID = 2
+// Definimos las posibles pantallas que vamos a utilizar
+sealed interface AppScreen {
+    data object Home : AppScreen
+    data object AddMatch : AppScreen
+    data object Stats : AppScreen
+    data object Map : AppScreen
+    data class MatchDetail(val matchId: Int) : AppScreen // Un id que enviaremos desde AddMatch
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,24 +50,78 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             App_Futbol_TFGTheme {
-                MapScreen()
+                TfgApp(db = db)
         }
     }
 }
+    @Composable
+    fun TfgApp(db: AppDatabase) {
+        var currentScreen by remember { mutableStateOf<AppScreen>(AppScreen.Home) }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+        when (val screen = currentScreen) {
+            AppScreen.Home -> HomeScreen(
+                userId = DEMO_USER_ID,
+                db = db,
+                onNavigateBottom = { index ->
+                    currentScreen = when (index) {
+                        0 -> AppScreen.Home
+                        1 -> AppScreen.AddMatch
+                        2 -> AppScreen.Stats
+                        else -> AppScreen.Map
+                    }
+                }
+            )
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    App_Futbol_TFGTheme {
-        Greeting("Android")
+            AppScreen.AddMatch -> AddMatchScreen(
+                db = db,
+                onNavigateBottom = { index ->
+                    currentScreen = when (index) {
+                        0 -> AppScreen.Home
+                        1 -> AppScreen.AddMatch
+                        2 -> AppScreen.Stats
+                        else -> AppScreen.Map
+                    }
+                },
+                onOpenMatchDetail = { matchId ->
+                    currentScreen = AppScreen.MatchDetail(matchId)
+                }
+            )
+
+            AppScreen.Stats -> StatsScreen(
+                userId = DEMO_USER_ID,
+                db = db,
+                onNavigateBottom = { index ->
+                    currentScreen = when (index) {
+                        0 -> AppScreen.Home
+                        1 -> AppScreen.AddMatch
+                        2 -> AppScreen.Stats
+                        else -> AppScreen.Map
+                    }
+                }
+            )
+
+            AppScreen.Map -> MapScreen(
+                onNavigateBottom = { index ->
+                    currentScreen = when (index) {
+                        0 -> AppScreen.Home
+                        1 -> AppScreen.AddMatch
+                        2 -> AppScreen.Stats
+                        else -> AppScreen.Map
+                    }
+                }
+            )
+
+            is AppScreen.MatchDetail -> MatchDetailScreen(
+                matchId = screen.matchId,
+                userId = DEMO_USER_ID,
+                db = db,
+                onBack = {
+                    currentScreen = AppScreen.AddMatch
+                },
+                onMatchAdded = {
+                    currentScreen = AppScreen.Home
+                }
+            )
+        }
     }
-}
 }

@@ -2,6 +2,7 @@ package com.example.app_futbol_tfg.ui.screens.addmatch
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -32,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,7 +43,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import com.example.app_futbol_tfg.R
+import com.example.app_futbol_tfg.data.database.AppDatabase
 import com.example.app_futbol_tfg.ui.components.AppBottomBar
 import com.example.app_futbol_tfg.ui.components.AppTopBar
 import com.example.app_futbol_tfg.ui.ui.theme.BackgroundLight
@@ -49,71 +53,50 @@ import com.example.app_futbol_tfg.ui.ui.theme.CardBackground
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
 import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
 import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
+import com.example.app_futbol_tfg.ui.utils.getDrawableId
+
 
 @Composable
-fun AddMatchScreen() {
+fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatchDetail: (Int) -> Unit)  {
     // Estado visual del buscador.
     // Más adelante se podrá conectar a filtros reales de Room.
     var searchText by remember { mutableStateOf("") }
-    // Lista mock visual de partidos sugeridos.
-    // Más adelante esto vendrá de la base de datos.
-    val suggestedMatches = listOf(
+
+    val context = LocalContext.current
+    // Estas variables van a traer toda la información desde Room
+    val partidos by db.partidoDao().getAll().collectAsState(initial = emptyList())
+    val equipos by db.equipoDao().getAll().collectAsState(initial = emptyList())
+    val competiciones by db.competicionDao().getAll().collectAsState(initial = emptyList())
+    val temporadas by db.temporadaDao().getAll().collectAsState(initial = emptyList())
+    val estadios by db.estadioDao().getAll().collectAsState(initial = emptyList())
+    val paises by db.paisDao().getAll().collectAsState(initial = emptyList())
+
+    // Transformamos las listas en mapas clave-valor para que el acceso a los datos sea más eficiente y no recorra listas
+    val equiposMap = equipos.associateBy { it.id }
+    val competicionesMap = competiciones.associateBy { it.id }
+    val temporadasMap = temporadas.associateBy { it.id }
+    val estadiosMap = estadios.associateBy { it.id }
+    val paisesMap = paises.associateBy { it.id }
+
+    val matches = partidos.map { partido ->
+        val equipoLocal = equiposMap[partido.idEquipoLocal]
+        val equipoVisitante = equiposMap[partido.idEquipoVisitante]
+        val competicion = partido.idCompeticion?.let { competicionesMap[it] }
+        val temporada = partido.idTemporada?.let { temporadasMap[it] }
+        val pais = competicion?.idPais?.let { paisesMap[it] }
         MatchSuggestionUi(
-            homeTeam = "Getafe",
-            homeCrest = R.drawable.escudo_getafe,
-            result = "2 - 1",
-            awayTeam = "Leganés",
-            awayCrest = R.drawable.escudo_psg,
-            date = "12/03/2024",
-            season = "2023/24",
-            competition = "LaLiga EA Sports",
-            countryFlag = R.drawable.bandera_espana
-        ),
-        MatchSuggestionUi(
-            homeTeam = "Real Madrid",
-            homeCrest = R.drawable.escudo_real_madrid,
-            result = "3 - 0",
-            awayTeam = "Sevilla",
-            awayCrest = R.drawable.escudo_sevilla,
-            date = "24/02/2024",
-            season = "2023/24",
-            competition = "LaLiga EA Sports",
-            countryFlag = R.drawable.bandera_espana
-        ),
-        MatchSuggestionUi(
-            homeTeam = "Liverpool",
-            homeCrest = R.drawable.escudo_liverpool,
-            result = "1 - 1",
-            awayTeam = "Arsenal",
-            awayCrest = R.drawable.escudo_arsenal,
-            date = "05/11/2023",
-            season = "2023/24",
-            competition = "Premier League",
-            countryFlag = R.drawable.bandera_inglaterra
-        ),
-        MatchSuggestionUi(
-            homeTeam = "Juventus",
-            homeCrest = R.drawable.escudo_juventus,
-            result = "0 - 2",
-            awayTeam = "Inter",
-            awayCrest = R.drawable.escudo_inter_milan,
-            date = "18/01/2024",
-            season = "2023/24",
-            competition = "Serie A",
-            countryFlag = R.drawable.bandera_italia
-        ),
-        MatchSuggestionUi(
-            homeTeam = "PSG",
-            homeCrest = R.drawable.escudo_psg,
-            result = "4 - 2",
-            awayTeam = "Lyon",
-            awayCrest = R.drawable.escudo_olympique_lyon,
-            date = "09/04/2024",
-            season = "2023/24",
-            competition = "Ligue 1",
-            countryFlag = R.drawable.bandera_francia
+            id = partido.id,
+            homeTeam = equipoLocal?.nombre ?: "Equipo local",
+            homeCrest = getDrawableId(context, equipoLocal?.escudo),
+            result = "${partido.golesLocal} - ${partido.golesVisitante}",
+            awayTeam = equipoVisitante?.nombre ?: "Equipo visitante",
+            awayCrest = getDrawableId(context, equipoVisitante?.escudo),
+            date = partido.fecha,
+            season = temporada?.temporada ?: "Temporada",
+            competition = competicion?.nombre ?: "Competición",
+            countryFlag = getDrawableId(context, pais?.bandera)
         )
-    )
+    }
     Scaffold(
         topBar = {
             AppTopBar(
@@ -123,9 +106,7 @@ fun AddMatchScreen() {
         bottomBar = {
             AppBottomBar(
                 selectedIndex = 1,
-                onItemSelected = {
-                    // Más adelante: navegación real
-                }
+                onItemSelected = onNavigateBottom
             )
         },
         containerColor = BackgroundLight
@@ -195,13 +176,14 @@ fun AddMatchScreen() {
                     )
                 )
                 // Lista de partidos sugeridos
-                suggestedMatches.forEach { match ->
-                    MatchSuggestionCard(
+                matches.forEach { match ->
+                    MatchUi(
                         match = match,
                         crestSize = crestSize,
                         resultSize = resultSize,
                         teamNameSize = teamNameSize,
-                        cardPadding = cardPadding
+                        cardPadding = cardPadding,
+                        onOpenMatchDetail = onOpenMatchDetail
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
@@ -212,6 +194,7 @@ fun AddMatchScreen() {
 //  Modelo visual temporal para la maqueta de partidos sugeridos.
 // Más adelante vendrá de Room o de la fuente real de datos.
 data class MatchSuggestionUi(
+    val id: Int,
     val homeTeam: String,
     val homeCrest: Int,
     val result: String,
@@ -224,15 +207,20 @@ data class MatchSuggestionUi(
 )
 // Card reutilizable de un partido sugerido.
 @Composable
-private fun MatchSuggestionCard(
+private fun MatchUi(
     match: MatchSuggestionUi,
     crestSize: androidx.compose.ui.unit.Dp,
     resultSize: androidx.compose.ui.unit.TextUnit,
     teamNameSize: androidx.compose.ui.unit.TextUnit,
-    cardPadding: androidx.compose.ui.unit.Dp
+    cardPadding: androidx.compose.ui.unit.Dp,
+    onOpenMatchDetail: (Int) -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                onOpenMatchDetail(match.id)
+                       },
         shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(
             containerColor = CardBackground

@@ -45,7 +45,7 @@ import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
 import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
 
 @Composable
-fun MapScreen() {
+fun MapScreen(onNavigateBottom: (Int) -> Unit) {
 
     Scaffold(
         topBar = {
@@ -56,9 +56,7 @@ fun MapScreen() {
         bottomBar = {
             AppBottomBar(
                 selectedIndex = 3,
-                onItemSelected = {
-                    // Más adelante: navegación real
-                }
+                onItemSelected = onNavigateBottom
             )
         },
         containerColor = BackgroundLight

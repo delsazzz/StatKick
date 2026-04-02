@@ -15,6 +15,9 @@ interface PartidoJugadorDao {
     @Query("SELECT * FROM Partido_Jugador WHERE id_partido = :idPartido")
     fun getByPartido(idPartido: Int): Flow<List<PartidoJugadorEntity>>
 
+    @Query("SELECT * FROM Partido_Jugador WHERE id_partido IN (:ids)")
+    fun getByPartidos(ids: List<Int>): Flow<List<PartidoJugadorEntity>>
+
     @Query(
         """
         SELECT pj.*

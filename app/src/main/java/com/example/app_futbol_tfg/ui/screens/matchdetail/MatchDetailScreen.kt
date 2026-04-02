@@ -29,28 +29,91 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.app_futbol_tfg.R
+import com.example.app_futbol_tfg.data.database.AppDatabase
 import com.example.app_futbol_tfg.ui.components.AppTopBar
 import com.example.app_futbol_tfg.ui.ui.theme.BackgroundLight
 import com.example.app_futbol_tfg.ui.ui.theme.CardBackground
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
 import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
 import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
+import com.example.app_futbol_tfg.ui.utils.getDrawableId
+import kotlinx.coroutines.launch
 
 @Composable
-fun MatchDetailScreen() {
+fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> Unit, onMatchAdded: () -> Unit) {
+    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Se hace la llamada con el matchId y se guarda el resultado en partido
+    val partidoState = produceState<com.example.app_futbol_tfg.data.entity.PartidoEntity?>(initialValue = null, matchId) {
+        value = db.partidoDao().getById(matchId)
+    }
+    val partido = partidoState.value
+    // Con esto intentamos evitar que haya un crash cuando carga el partido
+    if (partido == null) {
+        Text("Cargando partido...")
+        return
+    }
+
+    // Cargamos datos auxiliares para utilizar en la pantalla
+    val equipos by db.equipoDao().getAll().collectAsState(initial = emptyList())
+    val competiciones by db.competicionDao().getAll().collectAsState(initial = emptyList())
+    val temporadas by db.temporadaDao().getAll().collectAsState(initial = emptyList())
+    val estadios by db.estadioDao().getAll().collectAsState(initial = emptyList())
+    val paises by db.paisDao().getAll().collectAsState(initial = emptyList())
+
+    // Transformamos las listas en mapas clave-valor para que el acceso a los datos sea más eficiente y no recorra listas
+    val equiposMap = equipos.associateBy { it.id }
+    val competicionesMap = competiciones.associateBy { it.id }
+    val temporadasMap = temporadas.associateBy { it.id }
+    val estadiosMap = estadios.associateBy { it.id }
+    val paisesMap = paises.associateBy { it.id }
+
+    // Esto es el equivalente a un JOIN en SQL. Genera relaciones entre las entidades con los ids almacenados en Partidos
+    val equipoLocal = partido?.let { equiposMap[it.idEquipoLocal] }
+    val equipoVisitante = partido?.let { equiposMap[it.idEquipoVisitante] }
+    val competicion = partido?.idCompeticion?.let { competicionesMap[it] }
+    val temporada = partido?.idTemporada?.let { temporadasMap[it] }
+    val estadio = partido?.idEstadio?.let { estadiosMap[it] }
+    val pais = competicion?.idPais?.let { paisesMap[it] }
+
+    // Este paso nos va a decir si el partido ya está añadido o no
+    val alreadyAddedState = produceState(initialValue = false, matchId, userId) {
+        value = db.usuarioPartidoDao().getRelacion(userId, matchId) != null
+    }
+    var alreadyAdded by remember { mutableStateOf(false) }
+    LaunchedEffect(alreadyAddedState.value) {
+        alreadyAdded = alreadyAddedState.value
+    }
+    val scope = rememberCoroutineScope()
+
+
+
     // Lista mock visual de jugadores.
     // Más adelante vendrá del partido seleccionado en la base de datos.
     val players = listOf(
@@ -64,13 +127,12 @@ fun MatchDetailScreen() {
         PlayerMatchUi("Sergio González", R.drawable.escudo_psg)
     )
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             AppTopBar(
                 title = "Detalle del partido",
                 showBackButton = true,
-                onBackClick = {
-                    // Más adelante: volver atrás
-                }
+                onBackClick = onBack
             )
         },
         // Esta pantalla NO lleva barra inferior
@@ -128,14 +190,14 @@ fun MatchDetailScreen() {
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Image(
-                                    painter = painterResource(id = R.drawable.escudo_getafe),
-                                    contentDescription = "Getafe",
+                                    painter = painterResource(id = getDrawableId(context, equipoLocal?.escudo)),
+                                    contentDescription = equipoLocal?.nombre,
                                     modifier = Modifier.size(crestSize),
                                     contentScale = ContentScale.Fit
                                 )
                                 Spacer(modifier = Modifier.height(10.dp))
                                 Text(
-                                    text = "Getafe",
+                                    text = equipoLocal?.nombre ?: "Local",
                                     color = TextPrimary,
                                     textAlign = TextAlign.Center,
                                     style = MaterialTheme.typography.bodyLarge.copy(
@@ -146,7 +208,7 @@ fun MatchDetailScreen() {
                             }
                             // Resultado
                             Text(
-                                text = "2 - 1",
+                                text = "${partido?.golesLocal ?: 0} - ${partido?.golesVisitante ?: 0}",
                                 color = PrimaryBlue,
                                 textAlign = TextAlign.Center,
                                 style = MaterialTheme.typography.headlineMedium.copy(
@@ -160,14 +222,14 @@ fun MatchDetailScreen() {
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Image(
-                                    painter = painterResource(id = R.drawable.escudo_psg),
-                                    contentDescription = "Leganés",
+                                    painter = painterResource(id = getDrawableId(context, equipoVisitante?.escudo)),
+                                    contentDescription = equipoVisitante?.nombre,
                                     modifier = Modifier.size(crestSize),
                                     contentScale = ContentScale.Fit
                                 )
                                 Spacer(modifier = Modifier.height(10.dp))
                                 Text(
-                                    text = "Leganés",
+                                    text = equipoVisitante?.nombre ?: "Visitante",
                                     color = TextPrimary,
                                     textAlign = TextAlign.Center,
                                     style = MaterialTheme.typography.bodyLarge.copy(
@@ -199,7 +261,7 @@ fun MatchDetailScreen() {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "12/03/2024",
+                                text = partido?.fecha ?: "",
                                 color = TextSecondary,
                                 style = MaterialTheme.typography.bodyMedium
                             )
@@ -207,7 +269,7 @@ fun MatchDetailScreen() {
                             DotSeparator()
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "2023/24",
+                                text = temporada?.temporada ?: "Temporada",
                                 color = TextSecondary,
                                 style = MaterialTheme.typography.bodyMedium
                             )
@@ -215,20 +277,20 @@ fun MatchDetailScreen() {
                             DotSeparator()
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "LaLiga EA Sports",
+                                text = competicion?.nombre ?: "Competición",
                                 color = TextSecondary,
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Image(
-                                painter = painterResource(id = R.drawable.bandera_espana),
-                                contentDescription = "Bandera de la competición",
+                                painter = painterResource(id = getDrawableId(context, pais?.bandera)),
+                                contentDescription = pais?.nombre,
                                 modifier = Modifier.size(18.dp),
                                 contentScale = ContentScale.Crop
                             )
                         }
                         Text(
-                            text = "Coliseum",
+                            text = estadio?.nombre ?: "Estadio",
                             color = TextPrimary,
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.SemiBold
@@ -283,10 +345,24 @@ fun MatchDetailScreen() {
                 // Botón para añadir los partidos a nuestro perfil
                 Button(
                     onClick = {
-                        // Más adelante:
-                        // 1. añadir partido al perfil del usuario
-                        // 2. actualizar estadísticas
+                        scope.launch {
+                            val fechaActual = java.text.SimpleDateFormat(
+                                "yyyy-MM-dd",
+                                java.util.Locale.getDefault()
+                            ).format(java.util.Date())
+                            db.usuarioPartidoDao().insert(
+                                com.example.app_futbol_tfg.data.entity.UsuarioPartidoEntity(
+                                    idUsuario = userId,
+                                    idPartido = matchId,
+                                    fechaRegistro = fechaActual
+                                )
+                            )
+                            alreadyAdded = true
+                            snackbarHostState.showSnackbar("Partido añadido correctamente")
+                            onMatchAdded() // vuelve a Home
+                        }
                     },
+                    enabled = !alreadyAdded,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
@@ -303,7 +379,10 @@ fun MatchDetailScreen() {
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Añadir partido a mi perfil",
+                        text = if(alreadyAdded)
+                            "Partido ya añadido"
+                            else
+                            "Añadir partido a mi perfil",
                         style = MaterialTheme.typography.bodyLarge.copy(
                             fontWeight = FontWeight.SemiBold
                         )
@@ -314,6 +393,7 @@ fun MatchDetailScreen() {
         }
     }
 }
+
 // Modelo para los jugadores
 data class PlayerMatchUi(
     val name: String,

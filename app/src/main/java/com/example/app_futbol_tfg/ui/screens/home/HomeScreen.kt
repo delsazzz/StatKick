@@ -25,6 +25,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.app_futbol_tfg.R
+import com.example.app_futbol_tfg.data.database.AppDatabase
 import com.example.app_futbol_tfg.ui.components.AppBottomBar
 import com.example.app_futbol_tfg.ui.components.AppTopBar
 import com.example.app_futbol_tfg.ui.ui.theme.BackgroundLight
@@ -43,7 +48,55 @@ import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
 import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
+    // Cargamos datos auxiliares para utilizar en la pantalla
+    val partidosVistos by db.usuarioPartidoDao()
+        .getPartidosByUsuario(userId)
+        .collectAsState(initial = emptyList())
+    val equipos by db.equipoDao().getAll().collectAsState(initial = emptyList())
+    val jugadores by db.jugadorDao().getAll().collectAsState(initial = emptyList())
+
+    // Transformamos las listas en mapas clave-valor para que el acceso a los datos sea más eficiente y no recorra listas
+    val equiposMap = equipos.associateBy { it.id }
+    val jugadoresMap = jugadores.associateBy { it.id }
+
+    // Generamos métricas básicas para las estadísticas
+    val totalPartidos = partidosVistos.size
+    val totalGoles = partidosVistos.sumOf { it.golesLocal + it.golesVisitante }
+    val teamCounter = mutableMapOf<Int, Int>()
+
+    partidosVistos.forEach { partido ->
+        teamCounter[partido.idEquipoLocal] =
+            (teamCounter[partido.idEquipoLocal] ?: 0) + 1
+        teamCounter[partido.idEquipoVisitante] =
+            (teamCounter[partido.idEquipoVisitante] ?: 0) + 1
+    }
+
+    val mostViewedTeam = teamCounter.maxByOrNull { it.value }?.key
+    val mostViewedTeamName = mostViewedTeam?.let { equiposMap[it]?.nombre } ?: "-"
+
+    val matchIds = partidosVistos.map { it.id }
+
+    val playerCounter = mutableMapOf<Int, Int>()
+
+    val partidoJugadores by if (matchIds.isNotEmpty()) {
+        db.partidoJugadorDao().getByPartidos(matchIds).collectAsState(initial = emptyList())
+    } else {
+        remember { mutableStateOf(emptyList()) }
+    }
+
+    partidoJugadores.forEach { pj ->
+        playerCounter[pj.idJugador] =
+            (playerCounter[pj.idJugador] ?: 0) + 1
+    }
+
+    val mostViewedPlayer = playerCounter.maxByOrNull { it.value }?.key
+
+    val mostViewedPlayerName =
+        mostViewedPlayer?.let { jugadoresMap[it]?.nombre } ?: "-"
+
+
+
     Scaffold(
         // Barra superior reutilizable
         topBar = {
@@ -60,9 +113,7 @@ fun HomeScreen() {
         bottomBar = {
             AppBottomBar(
                 selectedIndex = 0,
-                onItemSelected = { index ->
-                    // Más adelante aquí conectaréis la navegación real
-                }
+                onItemSelected = onNavigateBottom
             )
         },
         // Fondo principal de pantalla
@@ -159,12 +210,12 @@ fun HomeScreen() {
                         StatCard(
                             modifier = Modifier.weight(1f),
                             title = "Partidos vistos",
-                            value = "128"
+                            value = "$totalPartidos"
                         )
                         StatCard(
                             modifier = Modifier.weight(1f),
                             title = "Goles vistos",
-                            value = "342"
+                            value = "$totalGoles"
                         )
                     }
                     // Segunda fila
@@ -175,12 +226,12 @@ fun HomeScreen() {
                         StatCard(
                             modifier = Modifier.weight(1f),
                             title = "Equipo más visto",
-                            value = "Getafe CF"
+                            value = mostViewedTeamName
                         )
                         StatCard(
                             modifier = Modifier.weight(1f),
                             title = "Jugador más visto",
-                            value = "Dakonam Djené"
+                            value = mostViewedPlayerName
                         )
                     }
                     // Si queremos añadir más estadísticas se pueden añadir más
