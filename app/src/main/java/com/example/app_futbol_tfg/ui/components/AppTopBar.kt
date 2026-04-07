@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.app_futbol_tfg.R
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
+import androidx.compose.foundation.layout.statusBarsPadding
 
 // Esta función se puede reutilizar para todas las pantallas 
 // que incluyan una barra superior y se personaliza el título y botones 
@@ -36,7 +37,7 @@ fun AppTopBar(
         modifier = Modifier
             .fillMaxWidth()
             .background(PrimaryBlue)
-            .safeDrawingPadding()
+            .statusBarsPadding()
             .height(64.dp)
             .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically
