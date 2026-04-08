@@ -28,6 +28,7 @@ import com.example.app_futbol_tfg.ui.screens.home.HomeScreen
 import com.example.app_futbol_tfg.ui.screens.map.MapScreen
 import com.example.app_futbol_tfg.ui.screens.matchdetail.MatchDetailScreen
 import com.example.app_futbol_tfg.ui.screens.stats.StatsScreen
+import com.example.app_futbol_tfg.ui.screens.totalmatches.TotalMatchesScreen
 
 private const val DEMO_USER_ID = 2
 // Definimos las posibles pantallas que vamos a utilizar
@@ -36,7 +37,13 @@ sealed interface AppScreen {
     data object AddMatch : AppScreen
     data object Stats : AppScreen
     data object Map : AppScreen
-    data class MatchDetail(val matchId: Int) : AppScreen // Un id que enviaremos desde AddMatch
+    data object TotalMatches : AppScreen
+    data class MatchDetail(val matchId: Int, val from: DetailOrigin) : AppScreen // Un id que enviaremos desde AddMatch
+}
+
+enum class DetailOrigin {
+    ADD_MATCH,
+    SAVED_MATCHES
 }
 
 class MainActivity : ComponentActivity() {
@@ -69,7 +76,8 @@ class MainActivity : ComponentActivity() {
                         2 -> AppScreen.Stats
                         else -> AppScreen.Map
                     }
-                }
+                },
+                onOpenTotalMatches = {currentScreen = AppScreen.TotalMatches}
             )
 
             AppScreen.AddMatch -> AddMatchScreen(
@@ -83,7 +91,10 @@ class MainActivity : ComponentActivity() {
                     }
                 },
                 onOpenMatchDetail = { matchId ->
-                    currentScreen = AppScreen.MatchDetail(matchId)
+                    currentScreen = AppScreen.MatchDetail(
+                        matchId = matchId,
+                        from = DetailOrigin.ADD_MATCH
+                    )
                 }
             )
 
@@ -97,6 +108,20 @@ class MainActivity : ComponentActivity() {
                         2 -> AppScreen.Stats
                         else -> AppScreen.Map
                     }
+                }
+            )
+
+            AppScreen.TotalMatches -> TotalMatchesScreen(
+                userId = DEMO_USER_ID,
+                db = db,
+                onBack = {
+                    currentScreen = AppScreen.Home
+                },
+                onOpenMatchDetail = { matchId ->
+                    currentScreen = AppScreen.MatchDetail(
+                        matchId = matchId,
+                        from = DetailOrigin.SAVED_MATCHES
+                    )
                 }
             )
 
@@ -116,7 +141,10 @@ class MainActivity : ComponentActivity() {
                 userId = DEMO_USER_ID,
                 db = db,
                 onBack = {
-                    currentScreen = AppScreen.AddMatch
+                    currentScreen = when (screen.from) {
+                        DetailOrigin.ADD_MATCH -> AppScreen.AddMatch
+                        DetailOrigin.SAVED_MATCHES -> AppScreen.TotalMatches
+                    }
                 },
                 onMatchAdded = {
                     currentScreen = AppScreen.Home

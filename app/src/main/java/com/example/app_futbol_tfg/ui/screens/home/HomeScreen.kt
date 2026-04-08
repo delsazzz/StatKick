@@ -2,6 +2,7 @@ package com.example.app_futbol_tfg.ui.screens.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -48,7 +49,7 @@ import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
 import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
 
 @Composable
-fun HomeScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
+fun HomeScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit,onOpenTotalMatches: () -> Unit) {
     // Cargamos datos auxiliares para utilizar en la pantalla
     val partidosVistos by db.usuarioPartidoDao()
         .getPartidosByUsuario(userId)
@@ -94,8 +95,6 @@ fun HomeScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
 
     val mostViewedPlayerName =
         mostViewedPlayer?.let { jugadoresMap[it]?.nombre } ?: "-"
-
-
 
     Scaffold(
         // Barra superior reutilizable
@@ -210,7 +209,8 @@ fun HomeScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
                         StatCard(
                             modifier = Modifier.weight(1f),
                             title = "Partidos vistos",
-                            value = "$totalPartidos"
+                            value = "$totalPartidos",
+                            onClick = onOpenTotalMatches
                         )
                         StatCard(
                             modifier = Modifier.weight(1f),
@@ -275,10 +275,15 @@ fun HomeScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
 private fun StatCard(
     modifier: Modifier = Modifier,
     title: String,
-    value: String
+    value: String,
+    onClick: (() -> Unit)? = null
 ) {
     Card(
-        modifier = modifier,
+        modifier = if (onClick != null) {
+            modifier.clickable { onClick() }
+        } else {
+            modifier
+        },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = CardBackground

@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,12 +44,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.app_futbol_tfg.R
@@ -86,6 +85,7 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
     val temporadas by db.temporadaDao().getAll().collectAsState(initial = emptyList())
     val estadios by db.estadioDao().getAll().collectAsState(initial = emptyList())
     val paises by db.paisDao().getAll().collectAsState(initial = emptyList())
+    val localidades by db.localidadDao().getAll().collectAsState(initial = emptyList())
 
     // Transformamos las listas en mapas clave-valor para que el acceso a los datos sea más eficiente y no recorra listas
     val equiposMap = equipos.associateBy { it.id }
@@ -93,14 +93,17 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
     val temporadasMap = temporadas.associateBy { it.id }
     val estadiosMap = estadios.associateBy { it.id }
     val paisesMap = paises.associateBy { it.id }
+    val localidadesMap = localidades.associateBy { it.id }
 
     // Esto es el equivalente a un JOIN en SQL. Genera relaciones entre las entidades con los ids almacenados en Partidos
-    val equipoLocal = partido?.let { equiposMap[it.idEquipoLocal] }
-    val equipoVisitante = partido?.let { equiposMap[it.idEquipoVisitante] }
-    val competicion = partido?.idCompeticion?.let { competicionesMap[it] }
-    val temporada = partido?.idTemporada?.let { temporadasMap[it] }
-    val estadio = partido?.idEstadio?.let { estadiosMap[it] }
+    val equipoLocal = partido.let { equiposMap[it.idEquipoLocal] }
+    val equipoVisitante = partido.let { equiposMap[it.idEquipoVisitante] }
+    val competicion = partido.idCompeticion?.let { competicionesMap[it] }
+    val temporada = partido.idTemporada?.let { temporadasMap[it] }
+    val estadio = partido.idEstadio?.let { estadiosMap[it] }
     val pais = competicion?.idPais?.let { paisesMap[it] }
+    val pais_estadio = estadio?.idPais.let {paisesMap[it]}
+    val localidad = estadio?.idLocalidad?.let { localidadesMap[it] }
 
     // Este paso nos va a decir si el partido ya está añadido o no
     val alreadyAddedState = produceState(initialValue = false, matchId, userId) {
@@ -111,21 +114,34 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
         alreadyAdded = alreadyAddedState.value
     }
     val scope = rememberCoroutineScope()
+    // Cargamos los jugadores que han participado en los partidos desde Room
+    val jugadoresPartido by db.jugadorDao().getDetalleByPartido(matchId).collectAsState(initial = emptyList())
+    // Separamos a los jugadores por equipo local y visitante
+    val jugadoresLocales = jugadoresPartido.filter { it.idEquipo == partido.idEquipoLocal }
+    val jugadoresVisitantes = jugadoresPartido.filter { it.idEquipo == partido.idEquipoVisitante }
+    // Generamos varuables para los escudos
+    val localCrestRes = getDrawableId(context, equipoLocal?.escudo)
+    val visitanteCrestRes = getDrawableId(context, equipoVisitante?.escudo)
+    // Mapeamos a PlayerMatchUI los jugadores tanto locales como visitantes
+    val localPlayersUi = jugadoresLocales.map { jugador ->
+        PlayerMatchUi(
+            nombre = jugador.nombre,
+            apellido = getApellidoJugador(jugador.apellido1),
+            crestRes = localCrestRes,
+            titular = jugador.titular,
+            minutos_jugados = jugador.minutos_jugados
+        )
+    }
+    val visitantePlayersUi = jugadoresVisitantes.map { jugador ->
+        PlayerMatchUi(
+            nombre = jugador.nombre,
+            apellido = getApellidoJugador(jugador.apellido1),
+            crestRes = visitanteCrestRes,
+            titular = jugador.titular,
+            minutos_jugados = jugador.minutos_jugados
+        )
+    }
 
-
-
-    // Lista mock visual de jugadores.
-    // Más adelante vendrá del partido seleccionado en la base de datos.
-    val players = listOf(
-        PlayerMatchUi("David Soria", R.drawable.escudo_getafe),
-        PlayerMatchUi("Djené", R.drawable.escudo_getafe),
-        PlayerMatchUi("Mason Greenwood", R.drawable.escudo_getafe),
-        PlayerMatchUi("Borja Mayoral", R.drawable.escudo_getafe),
-        PlayerMatchUi("Óscar Rodríguez", R.drawable.escudo_psg),
-        PlayerMatchUi("Neyou", R.drawable.escudo_psg),
-        PlayerMatchUi("Miguel de la Fuente", R.drawable.escudo_psg),
-        PlayerMatchUi("Sergio González", R.drawable.escudo_psg)
-    )
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -208,7 +224,7 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                             }
                             // Resultado
                             Text(
-                                text = "${partido?.golesLocal ?: 0} - ${partido?.golesVisitante ?: 0}",
+                                text = "${partido.golesLocal} - ${partido.golesVisitante}",
                                 color = PrimaryBlue,
                                 textAlign = TextAlign.Center,
                                 style = MaterialTheme.typography.headlineMedium.copy(
@@ -254,16 +270,19 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(18.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = partido?.fecha ?: "",
+                                text = partido.fecha,
                                 color = TextSecondary,
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyMedium,
+                                textAlign = TextAlign.Center
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             DotSeparator()
@@ -271,7 +290,8 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                             Text(
                                 text = temporada?.temporada ?: "Temporada",
                                 color = TextSecondary,
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyMedium,
+                                textAlign = TextAlign.Center
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             DotSeparator()
@@ -279,7 +299,8 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                             Text(
                                 text = competicion?.nombre ?: "Competición",
                                 color = TextSecondary,
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyMedium,
+                                textAlign = TextAlign.Center
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Image(
@@ -289,13 +310,36 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                                 contentScale = ContentScale.Crop
                             )
                         }
-                        Text(
-                            text = estadio?.nombre ?: "Estadio",
-                            color = TextPrimary,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.SemiBold
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ){
+                            Image(
+                                painter = painterResource(id = R.drawable.logo_estadio),
+                                contentDescription = "Logo de estadio",
+                                modifier = Modifier.size(18.dp),
+                                contentScale = ContentScale.Crop
                             )
-                        )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = estadio?.nombre ?: "Estadio",
+                                color = TextPrimary,
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.SemiBold
+                                )
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            DotSeparator()
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "${localidad?.nombre} (${pais_estadio?.nombre})",
+                                color = TextSecondary,
+                                style = MaterialTheme.typography.bodyMedium,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
                 // Bloque con jugadores del partido
@@ -309,6 +353,13 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                             fontWeight = FontWeight.SemiBold
                         )
                     )
+                    Text(
+                        text = equipoLocal?.nombre ?: "Equipo local",
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    )
                     // En esta fila añadimos los jugadores del equipo local
                     Row(
                         modifier = Modifier
@@ -317,7 +368,7 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                             .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        players.forEach { player ->
+                        localPlayersUi.forEach { player ->
                             PlayerMiniCard(
                                 player = player,
                                 width = playerCardWidth,
@@ -325,6 +376,13 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                             )
                         }
                     }
+                    Text(
+                        text = equipoVisitante?.nombre ?: "Equipo visitante",
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    )
                     // En esta fila añadimos los jugadores del equipo visitante
                     Row(
                         modifier = Modifier
@@ -333,7 +391,7 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                             .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        players.forEach { player ->
+                        visitantePlayersUi.forEach { player ->
                             PlayerMiniCard(
                                 player = player,
                                 width = playerCardWidth,
@@ -396,9 +454,23 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
 
 // Modelo para los jugadores
 data class PlayerMatchUi(
-    val name: String,
-    val crestRes: Int
+    val nombre: String,
+    val apellido: String,
+    val crestRes: Int,
+    val titular: Boolean,
+    val minutos_jugados: Int?
 )
+// Modelo para los jugadores
+data class JugadorPartidoDetalle(
+    val id: Int,
+    val nombre: String,
+    val apellido1: String?,
+    val apellido2: String? = null,
+    val idEquipo: Int,
+    val titular: Boolean,
+    val minutos_jugados: Int?
+)
+
 // Minicard horizontal de jugador que muestra el avatar genérico, escudo, nombre
 @Composable
 private fun PlayerMiniCard(
@@ -407,53 +479,97 @@ private fun PlayerMiniCard(
     avatarSize: androidx.compose.ui.unit.Dp
 ) {
     Card(
-        modifier = Modifier.width(width),
+        modifier = Modifier
+            .width(120.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = CardBackground
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp, horizontal = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+        Box(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            // Avatar genérico del jugador
-            Box(
+            Column(
                 modifier = Modifier
-                    .size(avatarSize)
-                    .clip(CircleShape)
-                    .background(Color(0xFFE2E8F0)),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp, horizontal = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
+                // Avatar genérico del jugador
+                Box(
+                    modifier = Modifier
+                        .size(avatarSize)
+                        .clip(CircleShape)
+                        .background(Color(0xFFE2E8F0)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.profile_user),
+                        contentDescription = "Jugador genérico",
+                        modifier = Modifier.size(avatarSize * 0.55f),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+                // Escudo del equipo
                 Image(
-                    painter = painterResource(id = R.drawable.profile_user),
-                    contentDescription = "Jugador genérico",
-                    modifier = Modifier.size(avatarSize * 0.55f),
+                    painter = painterResource(id = player.crestRes),
+                    contentDescription = "Escudo equipo jugador",
+                    modifier = Modifier.size(22.dp),
                     contentScale = ContentScale.Fit
                 )
+                // Nombre y apellido del jugador
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        text = player.nombre,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        color = TextPrimary,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    )
+                    Text(
+                        text = player.apellido,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        color = TextPrimary,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+                }
             }
-            // Escudo del equipo
-            Image(
-                painter = painterResource(id = player.crestRes),
-                contentDescription = "Escudo equipo jugador",
-                modifier = Modifier.size(22.dp),
-                contentScale = ContentScale.Fit
-            )
-            // Nombre del jugador
-            Text(
-                text = player.name,
-                color = TextPrimary,
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontWeight = FontWeight.Medium
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(6.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(
+                        if (player.titular) Color(0xFF22C55E) else Color(0xFFEF4444)
+                    )
+                    .padding(horizontal = 6.dp, vertical = 3.dp)
+            ) {
+                Text(
+                    text = "${player.minutos_jugados ?: 0}'",
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Bold
+                    )
                 )
-            )
+            }
         }
     }
+}
+
+private fun getApellidoJugador(
+    apellido1: String?
+): String {
+    return listOfNotNull(apellido1).joinToString(" ")
 }
 @Composable
 private fun DotSeparator() {

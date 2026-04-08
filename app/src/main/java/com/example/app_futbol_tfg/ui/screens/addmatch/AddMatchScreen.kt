@@ -57,13 +57,18 @@ import com.example.app_futbol_tfg.ui.utils.getDrawableId
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.text.style.TextAlign
+import com.example.app_futbol_tfg.ui.components.MatchCard
+import com.example.app_futbol_tfg.ui.components.MatchSuggestionUi
 
 @Composable
 fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatchDetail: (Int) -> Unit)  {
     // Estado visual del buscador.
-    // Más adelante se podrá conectar a filtros reales de Room.
     var searchText by remember { mutableStateOf("") }
+    // Filtro que usamos en el buscador por equipos o competición
     var selectedSuggestion by remember { mutableStateOf<SearchSuggestionUi?>(null) }
+    // Esta variable controla si se muestra el desplegable de sugerencias al escribir en el buscador
     var showSuggestions by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
@@ -82,6 +87,7 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
     val estadiosMap = estadios.associateBy { it.id }
     val paisesMap = paises.associateBy { it.id }
 
+    // Convertimos a los equipos en sugerencias visuales para el usuario, transforma datos de Room para UI
     val teamSuggestions = equipos.map { equipo ->
         SearchSuggestionUi.Team(
             id = equipo.id,
@@ -89,9 +95,9 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
             crestRes = getDrawableId(context, equipo.escudo)
         )
     }
+    // Convertimos las competiciones en sugerencias visuales para el usuario
     val competitionSuggestions = competiciones.map { competicion ->
         val pais = competicion.idPais?.let { paisesMap[it] }
-
         SearchSuggestionUi.Competition(
             id = competicion.id,
             name = competicion.nombre,
@@ -118,8 +124,9 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
             countryFlag = getDrawableId(context, pais?.bandera)
         )
     }
-
+    // Se normaliza el texto introducido en el buscador a minúsculas y sin espacios de más
     val query = searchText.trim().lowercase()
+    // Aplicamos un filtro de sugerencias según lo que escribe el usuario en el buscador
     val filteredSuggestions = if (query.isBlank()) {
         emptyList()
     } else {
@@ -129,20 +136,24 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
         val competitions = competitionSuggestions.filter {
             it.name.lowercase().contains(query)
         }
+        // Limitamos las sugerencias al número que queramos para no extender demasiado la lista
         (teams + competitions).take(8)
     }
-
+    // Filtrado de partidos según el texto escrito o la sugerencia seleccionada
     val filteredMatches = when (val suggestion = selectedSuggestion) {
+        // Si se selecciona el equipo se filtra por partidos donde participe
         is SearchSuggestionUi.Team -> {
             matches.filter { match ->
                 match.homeTeam == suggestion.name || match.awayTeam == suggestion.name
             }
         }
+        // Si se selecciona la competición se filtra por los partidos que la contengan
         is SearchSuggestionUi.Competition -> {
             matches.filter { match ->
                 match.competition == suggestion.name
             }
         }
+        // Si no se selecciona nada, se filtra según el texto que se escriba en el buscador
         null -> {
             if (query.isBlank()) {
                 matches
@@ -199,8 +210,8 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                     value = searchText,
                     onValueChange = {
                         searchText = it
-                        selectedSuggestion = null
-                        showSuggestions = it.isNotBlank()
+                        selectedSuggestion = null // Reinicia la selección previa
+                        showSuggestions = it.isNotBlank() // Muestra el desplegable de sugerencias si hay texto escrito
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = {
@@ -230,7 +241,7 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                         unfocusedContainerColor = Color.White
                     )
                 )
-
+                // Se muestran sugerencias en un desplegable del buscador según lo que se escriba
                 if (showSuggestions && filteredSuggestions.isNotEmpty()) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -243,6 +254,8 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
+                                        // Si pulsamos una sugerencia, se rellena el buscador, se guarda como
+                                        // la selección activa y se oculta el desplegable
                                         .clickable {
                                             searchText = when (suggestion) {
                                                 is SearchSuggestionUi.Team -> suggestion.name
@@ -295,9 +308,9 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                         fontWeight = FontWeight.SemiBold
                     )
                 )
-                // Lista de partidos sugeridos
+                // Se muestra la lista de partidos filtrados según nuestra búsqueda
                 filteredMatches.forEach { match ->
-                    MatchUi(
+                    MatchCard(
                         match = match,
                         crestSize = crestSize,
                         resultSize = resultSize,
@@ -311,21 +324,9 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
         }
     }
 }
-//  Modelo visual temporal para la maqueta de partidos sugeridos.
-// Más adelante vendrá de Room o de la fuente real de datos.
-data class MatchSuggestionUi(
-    val id: Int,
-    val homeTeam: String,
-    val homeCrest: Int,
-    val result: String,
-    val awayTeam: String,
-    val awayCrest: Int,
-    val date: String,
-    val season: String,
-    val competition: String,
-    val countryFlag: Int
-)
 
+// Modelo de sugerencias que se utiliza en el buscador para equipos y competiciones
+// Nos permite mezclar en una misma lista ambos
 sealed class SearchSuggestionUi {
     data class Team(
         val id: Int,
@@ -338,133 +339,4 @@ sealed class SearchSuggestionUi {
         val name: String,
         val flagRes: Int
     ) : SearchSuggestionUi()
-}
-
-// Card reutilizable de un partido sugerido.
-@Composable
-private fun MatchUi(
-    match: MatchSuggestionUi,
-    crestSize: androidx.compose.ui.unit.Dp,
-    resultSize: androidx.compose.ui.unit.TextUnit,
-    teamNameSize: androidx.compose.ui.unit.TextUnit,
-    cardPadding: androidx.compose.ui.unit.Dp,
-    onOpenMatchDetail: (Int) -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable {
-                onOpenMatchDetail(match.id)
-                       },
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = CardBackground
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(cardPadding),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            // Fila principal del partido
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Equipo local
-                Text(
-                    text = match.homeTeam,
-                    modifier = Modifier.weight(1f),
-                    color = TextPrimary,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontSize = teamNameSize,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                // Escudo local
-                Image(
-                    painter = painterResource(id = match.homeCrest),
-                    contentDescription = match.homeTeam,
-                    modifier = Modifier.size(crestSize),
-                    contentScale = ContentScale.Fit
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                // Resultado
-                Text(
-                    text = match.result,
-                    color = PrimaryBlue,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontSize = resultSize,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                // Escudo visitante
-                Image(
-                    painter = painterResource(id = match.awayCrest),
-                    contentDescription = match.awayTeam,
-                    modifier = Modifier.size(crestSize),
-                    contentScale = ContentScale.Fit
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                // Equipo visitante
-                Text(
-                    text = match.awayTeam,
-                    modifier = Modifier.weight(1f),
-                    color = TextPrimary,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontSize = teamNameSize,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                )
-            }
-            // Segunda fila con información adicional del partido
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = match.date,
-                    color = TextSecondary,
-                    style = MaterialTheme.typography.bodySmall
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                DotSeparator()
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = match.season,
-                    color = TextSecondary,
-                    style = MaterialTheme.typography.bodySmall
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                DotSeparator()
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = match.competition,
-                    color = TextSecondary,
-                    style = MaterialTheme.typography.bodySmall
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Image(
-                    painter = painterResource(id = match.countryFlag),
-                    contentDescription = "País competición",
-                    modifier = Modifier.size(18.dp),
-                    contentScale = ContentScale.Crop
-                )
-            }
-        }
-    }
-}
-
-// Separador entre texto con forma de punto ·
-@Composable
-private fun DotSeparator() {
-    Text(
-        text = "•",
-        color = TextSecondary,
-        style = MaterialTheme.typography.bodySmall
-    )
 }

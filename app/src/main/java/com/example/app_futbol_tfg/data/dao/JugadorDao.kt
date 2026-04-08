@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.example.app_futbol_tfg.data.entity.JugadorEntity
+import com.example.app_futbol_tfg.ui.screens.matchdetail.JugadorPartidoDetalle
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -26,6 +27,12 @@ interface JugadorDao {
 
     @Query("SELECT * FROM Jugadores WHERE id_equipo_actual IS NULL AND activo = 1")
     fun getSinEquipo(): Flow<List<JugadorEntity>>
+
+    @Query("""SELECT j.id AS id, j.nombre AS nombre, j.apellido1 AS apellido1, j.apellido2 AS apellido2,
+        pj.id_equipo AS idEquipo, pj.titular AS titular, pj.minutos_jugados AS minutos_jugados 
+        FROM Jugadores j INNER JOIN Partido_Jugador pj ON j.id = pj.id_jugador
+        WHERE pj.id_partido = :idPartido ORDER BY pj.id_equipo, pj.titular DESC, j.apellido1, j.nombre""")
+    fun getDetalleByPartido(idPartido: Int): Flow<List<JugadorPartidoDetalle>>
 
     @Query("SELECT * FROM Jugadores WHERE id = :id")
     suspend fun getById(id: Int): JugadorEntity?
