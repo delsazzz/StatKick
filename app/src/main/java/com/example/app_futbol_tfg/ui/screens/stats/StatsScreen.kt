@@ -28,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,60 +48,97 @@ import com.example.app_futbol_tfg.ui.ui.theme.CardBackground
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
 import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
 import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
+import androidx.compose.ui.platform.LocalContext
+import com.example.app_futbol_tfg.ui.utils.getDrawableId
+import androidx.compose.runtime.getValue
 
 @Composable
 fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
 
-    // ----------------------------------------------------------------
-    // DATOS MOCK VISUALES
-    // Esto es solo para maquetar la UI.
-    // Más adelante todo esto vendrá de Room / ViewModel.
-    // ----------------------------------------------------------------
+    val totalPartidos by db.usuarioPartidoDao().countByUsuarioFlow(userId).collectAsState(initial = 0)
 
-    val equiposVistos = listOf(
-        TeamStatUi("Real Madrid", R.drawable.escudo_real_madrid, "18"),
-        TeamStatUi("Getafe", R.drawable.escudo_getafe, "12"),
-        TeamStatUi("Arsenal", R.drawable.escudo_arsenal, "9"),
-        TeamStatUi("PSG", R.drawable.escudo_psg, "7"),
-        TeamStatUi("Juventus", R.drawable.escudo_juventus, "5")
-    )
+    val topEquipos by db.usuarioPartidoDao().getTopEquiposVistos(userId).collectAsState(initial = emptyList())
+    val totalEquiposDistintos by db.usuarioPartidoDao().countEquiposDistintosVistos(userId).collectAsState(initial = 0)
 
-    val jugadoresVistos = listOf(
-        PlayerStatUi("Bellingham", R.drawable.escudo_real_madrid),
-        PlayerStatUi("Borja Mayoral", R.drawable.escudo_getafe),
-        PlayerStatUi("Saka", R.drawable.escudo_arsenal),
-        PlayerStatUi("Mbappé", R.drawable.escudo_psg),
-        PlayerStatUi("Vlahović", R.drawable.escudo_juventus)
-    )
+    val estadiosVistos by db.usuarioPartidoDao().getEstadiosVistos(userId).collectAsState(initial = emptyList())
+    val totalEstadiosDistintos by db.usuarioPartidoDao().countEstadiosDistintosVistos(userId).collectAsState(initial = 0)
 
-    val goleadoresVistos = listOf(
-        PlayerStatUi("Borja Mayoral", R.drawable.escudo_getafe),
-        PlayerStatUi("Bellingham", R.drawable.escudo_real_madrid),
-        PlayerStatUi("Mbappé", R.drawable.escudo_psg),
-        PlayerStatUi("Saka", R.drawable.escudo_arsenal),
-        PlayerStatUi("Vlahović", R.drawable.escudo_juventus)
-    )
+    val jugadoresMasVistos by db.partidoJugadorDao().getJugadoresMasVistos(userId).collectAsState(initial = emptyList())
+    val totalJugadoresDistintos by db.partidoJugadorDao().countJugadoresDistintosVistos(userId).collectAsState(initial = 0)
 
-    val asistentesVistos = listOf(
-        PlayerStatUi("Kroos", R.drawable.escudo_real_madrid),
-        PlayerStatUi("Greenwood", R.drawable.escudo_getafe),
-        PlayerStatUi("Ødegaard", R.drawable.escudo_arsenal),
-        PlayerStatUi("Dembélé", R.drawable.escudo_psg),
-        PlayerStatUi("Chiesa", R.drawable.escudo_juventus)
-    )
+    val goleadoresVistos by db.partidoJugadorDao().getTopGoleadoresVistos(userId).collectAsState(initial = emptyList())
+    val totalGolesVistos by db.partidoJugadorDao().getTotalGolesVistos(userId).collectAsState(initial = 0)
 
-    val tarjetasVistas = listOf(
-        EventStatUi("Amarillas", R.drawable.football_yellow_card, "43"),
-        EventStatUi("Rojas", R.drawable.football_red_card, "6")
-    )
+    val asistentesVistos by db.partidoJugadorDao().getTopAsistentesVistos(userId).collectAsState(initial = emptyList())
+    val totalAsistenciasVistas by db.partidoJugadorDao().getTotalAsistenciasVistas(userId).collectAsState(initial = 0)
 
-    val estadiosVistos = listOf(
-        StadiumStatUi("Bernabéu", R.drawable.map_pin),
-        StadiumStatUi("Coliseum", R.drawable.map_pin),
-        StadiumStatUi("Emirates", R.drawable.map_pin),
-        StadiumStatUi("Parc des Princes", R.drawable.map_pin),
-        StadiumStatUi("Allianz Stadium", R.drawable.map_pin)
-    )
+    val amarillasVistas by db.partidoJugadorDao().getTopAmarillasVistas(userId).collectAsState(initial = emptyList())
+    val totalAmarillasVistas by db.partidoJugadorDao().getTotalAmarillasVistas(userId).collectAsState(initial = 0)
+
+    val rojasVistas by db.partidoJugadorDao().getTopRojasVistas(userId).collectAsState(initial = emptyList())
+    val totalRojasVistas by db.partidoJugadorDao().getTotalRojasVistas(userId).collectAsState(initial = 0)
+
+    val context = LocalContext.current
+
+    val equiposVistosUi = topEquipos.map {
+        TeamStatUi(
+            name = it.nombre,
+            crestRes = getDrawableId(context, it.escudo),
+            matchesCount = it.vecesVisto.toString()
+        )
+    }
+
+    val jugadoresVistosUi = jugadoresMasVistos.map {
+        PlayerStatUi(
+            nombre = it.nombre,
+            apellido = it.apellido1 ?: "",
+            crestRes = getDrawableId(context, it.escudo),
+            stat = it.total.toString()
+        )
+    }
+
+    val goleadoresVistosUi = goleadoresVistos.map {
+        PlayerStatUi(
+            nombre = it.nombre,
+            apellido = it.apellido1 ?: "",
+            crestRes = getDrawableId(context, it.escudo),
+            stat = it.total.toString()
+        )
+    }
+
+    val asistentesVistosUi = asistentesVistos.map {
+        PlayerStatUi(
+            nombre = it.nombre,
+            apellido = it.apellido1 ?: "",
+            crestRes = getDrawableId(context, it.escudo),
+            stat = it.total.toString()
+        )
+    }
+
+    val amarillasVistasUi = amarillasVistas.map {
+        PlayerStatUi(
+            nombre = it.nombre,
+            apellido = it.apellido1 ?: "",
+            crestRes = getDrawableId(context, it.escudo),
+            stat = it.total.toString()
+        )
+    }
+
+    val rojasVistasUi = rojasVistas.map {
+        PlayerStatUi(
+            nombre = it.nombre,
+            apellido = it.apellido1 ?: "",
+            crestRes = getDrawableId(context, it.escudo),
+            stat = it.total.toString()
+        )
+    }
+
+    val estadiosVistosUi = estadiosVistos.map {
+        StadiumStatUi(
+            name = it.nombre,
+            iconRes = R.drawable.map_pin
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -133,7 +171,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
             val sectionSpacing = if (isSmallScreen) 18.dp else 24.dp
             val totalSize = if (isSmallScreen) 26.sp else 34.sp
             val subtitleSize = if (isSmallScreen) 13.sp else 14.sp
-            val cardWidth = if (isSmallScreen) 100.dp else 112.dp
+            val cardWidth = if (isSmallScreen) 115.dp else 128.dp
             val avatarSize = if (isSmallScreen) 50.dp else 58.dp
             val crestSize = if (isSmallScreen) 22.dp else 26.dp
 
@@ -152,11 +190,11 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
                 StatsSection(
                     title = "Partidos y equipos vistos",
                     totalLabel = "Partidos vistos",
-                    totalValue = "51",
+                    totalValue = totalPartidos.toString(),
                     totalSize = totalSize,
                     subtitleSize = subtitleSize
                 ) {
-                    equiposVistos.forEach { team ->
+                    equiposVistosUi.forEach { team ->
                         TeamMiniCard(
                             item = team,
                             cardWidth = cardWidth,
@@ -171,11 +209,11 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
                 StatsSection(
                     title = "Jugadores más vistos",
                     totalLabel = "Jugadores vistos",
-                    totalValue = "87",
+                    totalValue = totalJugadoresDistintos.toString(),
                     totalSize = totalSize,
                     subtitleSize = subtitleSize
                 ) {
-                    jugadoresVistos.forEach { player ->
+                    jugadoresVistosUi.forEach { player ->
                         PlayerMiniStatCard(
                             item = player,
                             cardWidth = cardWidth,
@@ -191,11 +229,11 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
                 StatsSection(
                     title = "Goleadores vistos",
                     totalLabel = "Goles vistos",
-                    totalValue = "146",
+                    totalValue = totalGolesVistos.toString(),
                     totalSize = totalSize,
                     subtitleSize = subtitleSize
                 ) {
-                    goleadoresVistos.forEach { player ->
+                    goleadoresVistosUi.forEach { player ->
                         PlayerMiniStatCard(
                             item = player,
                             cardWidth = cardWidth,
@@ -211,11 +249,11 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
                 StatsSection(
                     title = "Asistencias vistas",
                     totalLabel = "Asistencias",
-                    totalValue = "98",
+                    totalValue = totalAsistenciasVistas.toString(),
                     totalSize = totalSize,
                     subtitleSize = subtitleSize
                 ) {
-                    asistentesVistos.forEach { player ->
+                    asistentesVistosUi.forEach { player ->
                         PlayerMiniStatCard(
                             item = player,
                             cardWidth = cardWidth,
@@ -229,16 +267,35 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
                 // BLOQUE 5 - TARJETAS
                 // ============================================================
                 StatsSection(
-                    title = "Tarjetas vistas",
-                    totalLabel = "Tarjetas totales",
-                    totalValue = "49",
+                    title = "Jugadores con más amarillas",
+                    totalLabel = "Amarillas vistas",
+                    totalValue = totalAmarillasVistas.toString(),
                     totalSize = totalSize,
                     subtitleSize = subtitleSize
                 ) {
-                    tarjetasVistas.forEach { event ->
-                        EventMiniCard(
-                            item = event,
-                            cardWidth = cardWidth
+                    amarillasVistasUi.forEach { player ->
+                        PlayerMiniStatCard(
+                            item = player,
+                            cardWidth = cardWidth,
+                            avatarSize = avatarSize,
+                            crestSize = crestSize
+                        )
+                    }
+                }
+
+                StatsSection(
+                    title = "Jugadores con más rojas",
+                    totalLabel = "Rojas vistas",
+                    totalValue = totalRojasVistas.toString(),
+                    totalSize = totalSize,
+                    subtitleSize = subtitleSize
+                ) {
+                    rojasVistasUi.forEach { player ->
+                        PlayerMiniStatCard(
+                            item = player,
+                            cardWidth = cardWidth,
+                            avatarSize = avatarSize,
+                            crestSize = crestSize
                         )
                     }
                 }
@@ -249,11 +306,11 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
                 StatsSection(
                     title = "Estadios vistos",
                     totalLabel = "Estadios",
-                    totalValue = "11",
+                    totalValue = totalEstadiosDistintos.toString(),
                     totalSize = totalSize,
                     subtitleSize = subtitleSize
                 ) {
-                    estadiosVistos.forEach { stadium ->
+                    estadiosVistosUi.forEach { stadium ->
                         StadiumMiniCard(
                             item = stadium,
                             cardWidth = cardWidth
@@ -358,17 +415,10 @@ data class TeamStatUi(
  * Modelo visual de jugadores.
  */
 data class PlayerStatUi(
-    val name: String,
-    val crestRes: Int
-)
-
-/**
- * Modelo visual de eventos.
- */
-data class EventStatUi(
-    val name: String,
-    val iconRes: Int,
-    val total: String
+    val nombre: String,
+    val apellido: String,
+    val crestRes: Int,
+    val stat: String
 )
 
 /**
@@ -408,7 +458,6 @@ private fun TeamMiniCard(
                 modifier = Modifier.size(crestSize),
                 contentScale = ContentScale.Fit
             )
-
             Text(
                 text = item.matchesCount,
                 color = PrimaryBlue,
@@ -417,15 +466,20 @@ private fun TeamMiniCard(
                     fontWeight = FontWeight.Bold
                 )
             )
-
-            Text(
-                text = item.name,
-                color = TextPrimary,
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontWeight = FontWeight.Medium
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.height(36.dp)
+            ) {
+                Text(
+                    text = item.name,
+                    color = TextPrimary,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontWeight = FontWeight.Medium
+                    )
                 )
-            )
+            }
         }
     }
 }
@@ -452,7 +506,7 @@ private fun PlayerMiniStatCard(
                 .fillMaxWidth()
                 .padding(vertical = 14.dp, horizontal = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Box(
                 modifier = Modifier
@@ -469,71 +523,50 @@ private fun PlayerMiniStatCard(
                 )
             }
 
-            Image(
-                painter = painterResource(id = item.crestRes),
-                contentDescription = item.name,
-                modifier = Modifier.size(crestSize),
-                contentScale = ContentScale.Fit
-            )
-
-            Text(
-                text = item.name,
-                color = TextPrimary,
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontWeight = FontWeight.Medium
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Image(
+                    painter = painterResource(id = item.crestRes),
+                    contentDescription = "${item.nombre} ${item.apellido}",
+                    modifier = Modifier.size(crestSize),
+                    contentScale = ContentScale.Fit
                 )
-            )
-        }
-    }
-}
 
-/**
- * Minicard para eventos como amarillas o rojas.
- */
-@Composable
-private fun EventMiniCard(
-    item: EventStatUi,
-    cardWidth: androidx.compose.ui.unit.Dp
-) {
-    Card(
-        modifier = Modifier.width(cardWidth),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = BackgroundLight
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 14.dp, horizontal = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Icon(
-                painter = painterResource(id = item.iconRes),
-                contentDescription = item.name,
-                tint = PrimaryBlue,
-                modifier = Modifier.size(28.dp)
-            )
-
-            Text(
-                text = item.total,
-                color = PrimaryBlue,
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold
+                Text(
+                    text = item.stat,
+                    color = PrimaryBlue,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    )
                 )
-            )
-
-            Text(
-                text = item.name,
-                color = TextPrimary,
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontWeight = FontWeight.Medium
+            }
+            Column(
+                modifier = Modifier.height(38.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text = item.nombre,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    color = TextPrimary,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontWeight = FontWeight.SemiBold
+                    )
                 )
-            )
+                Text(
+                    text = item.apellido,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    color = TextPrimary,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontWeight = FontWeight.Medium
+                    )
+                )
+            }
         }
     }
 }
@@ -566,15 +599,20 @@ private fun StadiumMiniCard(
                 tint = PrimaryBlue,
                 modifier = Modifier.size(28.dp)
             )
-
-            Text(
-                text = item.name,
-                color = TextPrimary,
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontWeight = FontWeight.Medium
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.height(36.dp)
+            ) {
+                Text(
+                    text = item.name,
+                    color = TextPrimary,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontWeight = FontWeight.Medium
+                    )
                 )
-            )
+            }
         }
     }
 }
