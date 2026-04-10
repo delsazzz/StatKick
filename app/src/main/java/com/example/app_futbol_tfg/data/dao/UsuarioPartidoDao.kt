@@ -32,8 +32,11 @@ interface UsuarioPartidoDao {
         LIMIT 1
         """
     )
+
     suspend fun getRelacion(idUsuario: Int, idPartido: Int): UsuarioPartidoEntity?
 
+    @Query("DELETE FROM Usuario_Partido WHERE id_usuario = :userId AND id_partido = :matchId")
+    suspend fun deleteRelacion(userId: Int, matchId: Int)
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(usuarioPartido: UsuarioPartidoEntity): Long
 

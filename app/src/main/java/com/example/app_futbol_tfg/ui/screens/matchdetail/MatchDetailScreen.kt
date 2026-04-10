@@ -62,11 +62,20 @@ import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
 import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
 import com.example.app_futbol_tfg.ui.utils.getDrawableId
 import kotlinx.coroutines.launch
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TextButton
 
 @Composable
 fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> Unit, onMatchAdded: () -> Unit) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
+    var menuExpanded by remember { mutableStateOf(false) }
+    var showRemoveDialog by remember { mutableStateOf(false) }
 
     // Se hace la llamada con el matchId y se guarda el resultado en partido
     val partidoState = produceState<com.example.app_futbol_tfg.data.entity.PartidoEntity?>(initialValue = null, matchId) {
@@ -175,10 +184,43 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = horizontalPadding, vertical = 18.dp)
+                    .padding(horizontal = horizontalPadding)
                     .navigationBarsPadding(),
                 verticalArrangement = Arrangement.spacedBy(sectionSpacing)
             ) {
+                if (alreadyAdded) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        Box {
+                            IconButton(
+                                onClick = { menuExpanded = true }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = "Más opciones",
+                                    tint = TextPrimary
+                                )
+                            }
+
+                            DropdownMenu(
+                                expanded = menuExpanded,
+                                onDismissRequest = { menuExpanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Quitar de mi perfil") },
+                                    onClick = {
+                                        menuExpanded = false
+                                        showRemoveDialog = true
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
                 // Bloque principal con resultado, datos del partido
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -449,6 +491,39 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
+    }
+    if (showRemoveDialog) {
+        AlertDialog(
+            onDismissRequest = { showRemoveDialog = false },
+            title = {
+                Text("Quitar partido")
+            },
+            text = {
+                Text("Eliminarás el partido de tu perfil. ¿Quieres continuar?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showRemoveDialog = false
+                        scope.launch {
+                            db.usuarioPartidoDao().deleteRelacion(userId, matchId)
+                            alreadyAdded = false
+                            snackbarHostState.showSnackbar("Partido eliminado de tu perfil")
+                            onBack()
+                        }
+                    }
+                ) {
+                    Text("Eliminar")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showRemoveDialog = false }
+                ) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }
 
