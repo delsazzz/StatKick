@@ -7,9 +7,7 @@ import com.example.app_futbol_tfg.data.repository.JugadorRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
-class JugadorViewModel(
-    private val repository: JugadorRepository
-) : ViewModel() {
+class JugadorViewModel(private val repository: JugadorRepository) : ViewModel() {
 
     val jugadores: Flow<List<JugadorEntity>> = repository.getAll()
 
@@ -17,14 +15,18 @@ class JugadorViewModel(
 
     val jugadoresRetirados: Flow<List<JugadorEntity>> = repository.getAllRetirados()
 
-    fun getByEquipo(idEquipo: Int): Flow<List<JugadorEntity>> =
-        repository.getByEquipo(idEquipo)
+    fun getByEquipo(idEquipo: Int): Flow<List<JugadorEntity>> = repository.getByEquipo(idEquipo)
 
-    fun getSinEquipo(): Flow<List<JugadorEntity>> =
-        repository.getSinEquipo()
+    fun getSinEquipo(): Flow<List<JugadorEntity>> = repository.getSinEquipo()
 
-    suspend fun getById(id: Int): JugadorEntity? =
-        repository.getById(id)
+    suspend fun getById(id: Int): JugadorEntity? {
+        return try {
+            repository.getById(id)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
 
     fun insertJugador(
         nombre: String,
@@ -38,6 +40,7 @@ class JugadorViewModel(
         activo: Boolean = true
     ) {
         viewModelScope.launch {
+            try {
             repository.insertJugador(
                 JugadorEntity(
                     nombre = nombre,
@@ -51,18 +54,29 @@ class JugadorViewModel(
                     activo = activo
                 )
             )
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
     fun updateJugador(jugador: JugadorEntity) {
         viewModelScope.launch {
+            try {
             repository.updateJugador(jugador)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
     fun deleteJugador(jugador: JugadorEntity) {
         viewModelScope.launch {
+            try {
             repository.deleteJugador(jugador)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 }

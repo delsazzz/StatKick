@@ -61,15 +61,17 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.style.TextAlign
 import com.example.app_futbol_tfg.ui.components.MatchCard
 import com.example.app_futbol_tfg.ui.components.MatchSuggestionUi
+import androidx.compose.runtime.saveable.rememberSaveable
 
 @Composable
 fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatchDetail: (Int) -> Unit)  {
     // Estado visual del buscador.
-    var searchText by remember { mutableStateOf("") }
+    var searchText by rememberSaveable { mutableStateOf("") }
     // Filtro que usamos en el buscador por equipos o competición
-    var selectedSuggestion by remember { mutableStateOf<SearchSuggestionUi?>(null) }
+    var selectedSuggestionType by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedSuggestionId by rememberSaveable { mutableStateOf<Int?>(null) }
     // Esta variable controla si se muestra el desplegable de sugerencias al escribir en el buscador
-    var showSuggestions by remember { mutableStateOf(false) }
+    var showSuggestions by rememberSaveable { mutableStateOf(false) }
 
     val context = LocalContext.current
     // Estas variables van a traer toda la información desde Room
@@ -103,6 +105,12 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
             name = competicion.nombre,
             flagRes = getDrawableId(context, pais?.bandera)
         )
+    }
+
+    val selectedSuggestion: SearchSuggestionUi? = when (selectedSuggestionType) {
+        "team" -> teamSuggestions.find { it.id == selectedSuggestionId }
+        "competition" -> competitionSuggestions.find { it.id == selectedSuggestionId }
+        else -> null
     }
 
     val matches = partidos.map { partido ->
@@ -140,23 +148,24 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
         (teams + competitions).take(8)
     }
     // Filtrado de partidos según el texto escrito o la sugerencia seleccionada
+    val suggestedMatches = matches
+        .sortedByDescending { it.date }
+        .take(10)
+
     val filteredMatches = when (val suggestion = selectedSuggestion) {
-        // Si se selecciona el equipo se filtra por partidos donde participe
         is SearchSuggestionUi.Team -> {
             matches.filter { match ->
                 match.homeTeam == suggestion.name || match.awayTeam == suggestion.name
             }
         }
-        // Si se selecciona la competición se filtra por los partidos que la contengan
         is SearchSuggestionUi.Competition -> {
             matches.filter { match ->
                 match.competition == suggestion.name
             }
         }
-        // Si no se selecciona nada, se filtra según el texto que se escriba en el buscador
         null -> {
             if (query.isBlank()) {
-                matches
+                suggestedMatches
             } else {
                 matches.filter { match ->
                     match.homeTeam.lowercase().contains(query) ||
@@ -210,7 +219,8 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                     value = searchText,
                     onValueChange = {
                         searchText = it
-                        selectedSuggestion = null // Reinicia la selección previa
+                        selectedSuggestionType = null
+                        selectedSuggestionId = null
                         showSuggestions = it.isNotBlank() // Muestra el desplegable de sugerencias si hay texto escrito
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -261,7 +271,18 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                                                 is SearchSuggestionUi.Team -> suggestion.name
                                                 is SearchSuggestionUi.Competition -> suggestion.name
                                             }
-                                            selectedSuggestion = suggestion
+
+                                            when (suggestion) {
+                                                is SearchSuggestionUi.Team -> {
+                                                    selectedSuggestionType = "team"
+                                                    selectedSuggestionId = suggestion.id
+                                                }
+                                                is SearchSuggestionUi.Competition -> {
+                                                    selectedSuggestionType = "competition"
+                                                    selectedSuggestionId = suggestion.id
+                                                }
+                                            }
+
                                             showSuggestions = false
                                         }
                                         .padding(horizontal = 14.dp, vertical = 12.dp),
@@ -299,10 +320,14 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                         }
                     }
                 }
-
+                val sectionTitle = if (query.isBlank() && selectedSuggestion == null) {
+                    "Partidos sugeridos"
+                } else {
+                    "${filteredMatches.size} partidos encontrados"
+                }
                 // Título de la sección
                 Text(
-                    text = "${filteredMatches.size} partidos encontrados",
+                    text = sectionTitle,
                     color = TextPrimary,
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.SemiBold

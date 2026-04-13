@@ -2,8 +2,6 @@ package com.example.app_futbol_tfg.data.database
 
 import android.content.Context
 import androidx.room.Room
-import androidx.room.RoomDatabase
-import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -17,21 +15,28 @@ object DatabaseProvider {
     fun getDatabase(context: Context): AppDatabase {
         return INSTANCE ?: synchronized(this) {
             // Aquí Room crea una BBDD con ese nombre y genera el SQLite real
-            val instance = Room.databaseBuilder(
-                context.applicationContext,
-                AppDatabase::class.java,
-                "futbol_tfg_database"
-            )
-                // Si el esquema de la BBDD cambiara y la versión no coincide, Room borra la BBDD y la recrea
-                .fallbackToDestructiveMigration()
-                .build()
-
+            try {
+                val instance = Room.databaseBuilder(
+                    context.applicationContext,
+                    AppDatabase::class.java,
+                    "futbol_tfg_database"
+                )
+                    // Si el esquema de la BBDD cambiara y la versión no coincide, Room borra la BBDD y la recrea
+                    .fallbackToDestructiveMigration()
+                    .build()
                 INSTANCE = instance
-
                 CoroutineScope(Dispatchers.IO).launch {
-                    SeedData.seed(instance)
+                    try {
+                        SeedData.seed(instance)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
                 }
-            instance
+                instance
+            } catch (e: Exception) {
+                e.printStackTrace()
+                throw e
+            }
         }
     }
 }

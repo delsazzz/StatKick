@@ -79,7 +79,12 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
 
     // Se hace la llamada con el matchId y se guarda el resultado en partido
     val partidoState = produceState<com.example.app_futbol_tfg.data.entity.PartidoEntity?>(initialValue = null, matchId) {
-        value = db.partidoDao().getById(matchId)
+        value = try {
+            db.partidoDao().getById(matchId)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
     }
     val partido = partidoState.value
     // Con esto intentamos evitar que haya un crash cuando carga el partido
@@ -116,7 +121,12 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
 
     // Este paso nos va a decir si el partido ya está añadido o no
     val alreadyAddedState = produceState(initialValue = false, matchId, userId) {
-        value = db.usuarioPartidoDao().getRelacion(userId, matchId) != null
+        value = try {
+            db.usuarioPartidoDao().getRelacion(userId, matchId) != null
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
     }
     var alreadyAdded by remember { mutableStateOf(false) }
     LaunchedEffect(alreadyAddedState.value) {
@@ -446,20 +456,25 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                 Button(
                     onClick = {
                         scope.launch {
-                            val fechaActual = java.text.SimpleDateFormat(
-                                "yyyy-MM-dd",
-                                java.util.Locale.getDefault()
-                            ).format(java.util.Date())
-                            db.usuarioPartidoDao().insert(
-                                com.example.app_futbol_tfg.data.entity.UsuarioPartidoEntity(
-                                    idUsuario = userId,
-                                    idPartido = matchId,
-                                    fechaRegistro = fechaActual
+                            try {
+                                val fechaActual = java.text.SimpleDateFormat(
+                                    "yyyy-MM-dd",
+                                    java.util.Locale.getDefault()
+                                ).format(java.util.Date())
+                                db.usuarioPartidoDao().insert(
+                                    com.example.app_futbol_tfg.data.entity.UsuarioPartidoEntity(
+                                        idUsuario = userId,
+                                        idPartido = matchId,
+                                        fechaRegistro = fechaActual
+                                    )
                                 )
-                            )
-                            alreadyAdded = true
-                            snackbarHostState.showSnackbar("Partido añadido correctamente")
-                            onMatchAdded() // vuelve a Home
+                                alreadyAdded = true
+                                snackbarHostState.showSnackbar("Partido añadido correctamente")
+                                onMatchAdded() // vuelve a Home
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                                snackbarHostState.showSnackbar("No se pudo añadir el partido")
+                            }
                         }
                     },
                     enabled = !alreadyAdded,
@@ -506,10 +521,15 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                     onClick = {
                         showRemoveDialog = false
                         scope.launch {
-                            db.usuarioPartidoDao().deleteRelacion(userId, matchId)
-                            alreadyAdded = false
-                            snackbarHostState.showSnackbar("Partido eliminado de tu perfil")
-                            onBack()
+                            try {
+                                db.usuarioPartidoDao().deleteRelacion(userId, matchId)
+                                alreadyAdded = false
+                                snackbarHostState.showSnackbar("Partido eliminado de tu perfil")
+                                onBack()
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                                snackbarHostState.showSnackbar("No se pudo eliminar el partido")
+                            }
                         }
                     }
                 ) {

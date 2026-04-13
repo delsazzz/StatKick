@@ -8,19 +8,22 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
 class EstadioViewModel(
-    private val repository: EstadioRepository
-) : ViewModel() {
+    private val repository: EstadioRepository) : ViewModel() {
 
     val estadios: Flow<List<EstadioEntity>> = repository.getAll()
 
-    fun getByPais(idPais: Int): Flow<List<EstadioEntity>> =
-        repository.getByPais(idPais)
+    fun getByPais(idPais: Int): Flow<List<EstadioEntity>> = repository.getByPais(idPais)
 
-    fun getByLocalidad(idLocalidad: Int): Flow<List<EstadioEntity>> =
-        repository.getByLocalidad(idLocalidad)
+    fun getByLocalidad(idLocalidad: Int): Flow<List<EstadioEntity>> = repository.getByLocalidad(idLocalidad)
 
-    suspend fun getById(id: Int): EstadioEntity? =
-        repository.getById(id)
+    suspend fun getById(id: Int): EstadioEntity? {
+        return try {
+            repository.getById(id)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
 
     fun insertEstadio(
         nombre: String,
@@ -29,6 +32,7 @@ class EstadioViewModel(
         capacidad: Int?
     ) {
         viewModelScope.launch {
+            try {
             repository.insertEstadio(
                 EstadioEntity(
                     nombre = nombre,
@@ -37,18 +41,29 @@ class EstadioViewModel(
                     capacidad = capacidad
                 )
             )
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
     fun updateEstadio(estadio: EstadioEntity) {
         viewModelScope.launch {
+            try {
             repository.updateEstadio(estadio)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
     fun deleteEstadio(estadio: EstadioEntity) {
         viewModelScope.launch {
+            try {
             repository.deleteEstadio(estadio)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 }
