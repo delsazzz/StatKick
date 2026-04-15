@@ -71,7 +71,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.TextButton
 
 @Composable
-fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> Unit, onMatchAdded: () -> Unit) {
+fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> Unit) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     var menuExpanded by remember { mutableStateOf(false) }
@@ -470,7 +470,6 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                                 )
                                 alreadyAdded = true
                                 snackbarHostState.showSnackbar("Partido añadido correctamente")
-                                onMatchAdded() // vuelve a Home
                             } catch (e: Exception) {
                                 e.printStackTrace()
                                 snackbarHostState.showSnackbar("No se pudo añadir el partido")
@@ -525,7 +524,6 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                                 db.usuarioPartidoDao().deleteRelacion(userId, matchId)
                                 alreadyAdded = false
                                 snackbarHostState.showSnackbar("Partido eliminado de tu perfil")
-                                onBack()
                             } catch (e: Exception) {
                                 e.printStackTrace()
                                 snackbarHostState.showSnackbar("No se pudo eliminar el partido")

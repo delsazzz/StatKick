@@ -172,7 +172,7 @@ fun HomeScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit,onO
                         Spacer(modifier = Modifier.height(16.dp))
                         // Nombre de usuario
                         Text(
-                            text = "Señor Ergo",
+                            text = "Sergio Álvarez",
                             color = TextPrimary,
                             style = MaterialTheme.typography.headlineSmall.copy(
                                 fontSize = titleSize,

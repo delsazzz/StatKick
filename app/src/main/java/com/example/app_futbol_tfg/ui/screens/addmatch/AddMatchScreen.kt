@@ -29,10 +29,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,17 +58,13 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.style.TextAlign
 import com.example.app_futbol_tfg.ui.components.MatchCard
 import com.example.app_futbol_tfg.ui.components.MatchSuggestionUi
-import androidx.compose.runtime.saveable.rememberSaveable
 
 @Composable
-fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatchDetail: (Int) -> Unit)  {
-    // Estado visual del buscador.
-    var searchText by rememberSaveable { mutableStateOf("") }
-    // Filtro que usamos en el buscador por equipos o competición
-    var selectedSuggestionType by rememberSaveable { mutableStateOf<String?>(null) }
-    var selectedSuggestionId by rememberSaveable { mutableStateOf<Int?>(null) }
-    // Esta variable controla si se muestra el desplegable de sugerencias al escribir en el buscador
-    var showSuggestions by rememberSaveable { mutableStateOf(false) }
+fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatchDetail: (Int) -> Unit,
+                   searchText: String, onSearchTextChange: (String) -> Unit, selectedSuggestionType: String?,
+                   onSelectedSuggestionTypeChange: (String?) -> Unit, selectedSuggestionId: Int?,
+                   onSelectedSuggestionIdChange: (Int?) -> Unit, showSuggestions: Boolean,
+                   onShowSuggestionsChange: (Boolean) -> Unit)  {
 
     val context = LocalContext.current
     // Estas variables van a traer toda la información desde Room
@@ -218,10 +211,10 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                 OutlinedTextField(
                     value = searchText,
                     onValueChange = {
-                        searchText = it
-                        selectedSuggestionType = null
-                        selectedSuggestionId = null
-                        showSuggestions = it.isNotBlank() // Muestra el desplegable de sugerencias si hay texto escrito
+                        onSearchTextChange(it)
+                        onSelectedSuggestionTypeChange(null)
+                        onSelectedSuggestionIdChange(null)
+                        onShowSuggestionsChange(it.isNotBlank()) // Muestra el desplegable de sugerencias si hay texto escrito
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = {
@@ -267,23 +260,25 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                                         // Si pulsamos una sugerencia, se rellena el buscador, se guarda como
                                         // la selección activa y se oculta el desplegable
                                         .clickable {
-                                            searchText = when (suggestion) {
-                                                is SearchSuggestionUi.Team -> suggestion.name
-                                                is SearchSuggestionUi.Competition -> suggestion.name
-                                            }
+                                            onSearchTextChange(
+                                                when (suggestion) {
+                                                    is SearchSuggestionUi.Team -> suggestion.name
+                                                    is SearchSuggestionUi.Competition -> suggestion.name
+                                                }
+                                            )
 
                                             when (suggestion) {
                                                 is SearchSuggestionUi.Team -> {
-                                                    selectedSuggestionType = "team"
-                                                    selectedSuggestionId = suggestion.id
+                                                    onSelectedSuggestionTypeChange("team")
+                                                    onSelectedSuggestionIdChange(suggestion.id)
                                                 }
                                                 is SearchSuggestionUi.Competition -> {
-                                                    selectedSuggestionType = "competition"
-                                                    selectedSuggestionId = suggestion.id
+                                                    onSelectedSuggestionTypeChange("competition")
+                                                    onSelectedSuggestionIdChange(suggestion.id)
                                                 }
                                             }
 
-                                            showSuggestions = false
+                                            onShowSuggestionsChange(false)
                                         }
                                         .padding(horizontal = 14.dp, vertical = 12.dp),
                                     verticalAlignment = Alignment.CenterVertically

@@ -29,6 +29,7 @@ import com.example.app_futbol_tfg.ui.screens.map.MapScreen
 import com.example.app_futbol_tfg.ui.screens.matchdetail.MatchDetailScreen
 import com.example.app_futbol_tfg.ui.screens.stats.StatsScreen
 import com.example.app_futbol_tfg.ui.screens.totalmatches.TotalMatchesScreen
+import androidx.compose.runtime.saveable.rememberSaveable
 
 private const val DEMO_USER_ID = 2
 // Definimos las posibles pantallas que vamos a utilizar
@@ -61,6 +62,11 @@ class MainActivity : ComponentActivity() {
     fun TfgApp(db: AppDatabase) {
         var currentScreen by remember { mutableStateOf<AppScreen>(AppScreen.Home) }
 
+        var addMatchSearchText by rememberSaveable { mutableStateOf("") }
+        var addMatchSelectedSuggestionType by rememberSaveable { mutableStateOf<String?>(null) }
+        var addMatchSelectedSuggestionId by rememberSaveable { mutableStateOf<Int?>(null) }
+        var addMatchShowSuggestions by rememberSaveable { mutableStateOf(false) }
+
         when (val screen = currentScreen) {
             AppScreen.Home -> HomeScreen(
                 userId = DEMO_USER_ID,
@@ -91,7 +97,15 @@ class MainActivity : ComponentActivity() {
                         matchId = matchId,
                         from = DetailOrigin.ADD_MATCH
                     )
-                }
+                },
+                searchText = addMatchSearchText,
+                onSearchTextChange = { addMatchSearchText = it },
+                selectedSuggestionType = addMatchSelectedSuggestionType,
+                onSelectedSuggestionTypeChange = { addMatchSelectedSuggestionType = it },
+                selectedSuggestionId = addMatchSelectedSuggestionId,
+                onSelectedSuggestionIdChange = { addMatchSelectedSuggestionId = it },
+                showSuggestions = addMatchShowSuggestions,
+                onShowSuggestionsChange = { addMatchShowSuggestions = it }
             )
 
             AppScreen.Stats -> StatsScreen(
@@ -142,9 +156,6 @@ class MainActivity : ComponentActivity() {
                         DetailOrigin.SAVED_MATCHES -> AppScreen.TotalMatches
                     }
                 },
-                onMatchAdded = {
-                    currentScreen = AppScreen.Home
-                }
             )
         }
     }
