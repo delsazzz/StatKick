@@ -17,9 +17,7 @@ import androidx.room.PrimaryKey
             onUpdate = ForeignKey.CASCADE
         )
     ],
-    indices = [
-        Index("id_pais")
-    ]
+    indices = [Index("id_pais")]
 )
 data class LocalidadEntity(
     @PrimaryKey(autoGenerate = true)

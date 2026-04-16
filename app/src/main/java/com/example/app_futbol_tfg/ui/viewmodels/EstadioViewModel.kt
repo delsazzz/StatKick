@@ -1,4 +1,4 @@
-package com.example.app_futbol_tfg.ui.viewmodel
+package com.example.app_futbol_tfg.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,22 +9,10 @@ import kotlinx.coroutines.launch
 
 class EstadioViewModel(
     private val repository: EstadioRepository) : ViewModel() {
-
     val estadios: Flow<List<EstadioEntity>> = repository.getAll()
-
     fun getByPais(idPais: Int): Flow<List<EstadioEntity>> = repository.getByPais(idPais)
-
     fun getByLocalidad(idLocalidad: Int): Flow<List<EstadioEntity>> = repository.getByLocalidad(idLocalidad)
-
-    suspend fun getById(id: Int): EstadioEntity? {
-        return try {
-            repository.getById(id)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
-    }
-
+    suspend fun getById(id: Int): EstadioEntity? = repository.getById(id)
     fun insertEstadio(
         nombre: String,
         idLocalidad: Int?,
@@ -32,7 +20,6 @@ class EstadioViewModel(
         capacidad: Int?
     ) {
         viewModelScope.launch {
-            try {
             repository.insertEstadio(
                 EstadioEntity(
                     nombre = nombre,
@@ -41,29 +28,16 @@ class EstadioViewModel(
                     capacidad = capacidad
                 )
             )
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
         }
     }
-
     fun updateEstadio(estadio: EstadioEntity) {
         viewModelScope.launch {
-            try {
             repository.updateEstadio(estadio)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
         }
     }
-
     fun deleteEstadio(estadio: EstadioEntity) {
         viewModelScope.launch {
-            try {
             repository.deleteEstadio(estadio)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
         }
     }
 }

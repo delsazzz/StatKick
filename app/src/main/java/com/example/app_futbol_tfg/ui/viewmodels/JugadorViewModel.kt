@@ -1,4 +1,4 @@
-package com.example.app_futbol_tfg.ui.viewmodel
+package com.example.app_futbol_tfg.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,26 +8,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
 class JugadorViewModel(private val repository: JugadorRepository) : ViewModel() {
-
     val jugadores: Flow<List<JugadorEntity>> = repository.getAll()
-
     val jugadoresActivos: Flow<List<JugadorEntity>> = repository.getAllActivos()
-
     val jugadoresRetirados: Flow<List<JugadorEntity>> = repository.getAllRetirados()
-
     fun getByEquipo(idEquipo: Int): Flow<List<JugadorEntity>> = repository.getByEquipo(idEquipo)
-
     fun getSinEquipo(): Flow<List<JugadorEntity>> = repository.getSinEquipo()
-
-    suspend fun getById(id: Int): JugadorEntity? {
-        return try {
-            repository.getById(id)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
-    }
-
+    suspend fun getById(id: Int): JugadorEntity? = repository.getById(id)
     fun insertJugador(
         nombre: String,
         apellido1: String?,
@@ -40,7 +26,6 @@ class JugadorViewModel(private val repository: JugadorRepository) : ViewModel() 
         activo: Boolean = true
     ) {
         viewModelScope.launch {
-            try {
             repository.insertJugador(
                 JugadorEntity(
                     nombre = nombre,
@@ -54,29 +39,16 @@ class JugadorViewModel(private val repository: JugadorRepository) : ViewModel() 
                     activo = activo
                 )
             )
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
         }
     }
-
     fun updateJugador(jugador: JugadorEntity) {
         viewModelScope.launch {
-            try {
             repository.updateJugador(jugador)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
         }
     }
-
     fun deleteJugador(jugador: JugadorEntity) {
         viewModelScope.launch {
-            try {
             repository.deleteJugador(jugador)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
         }
     }
 }

@@ -11,25 +11,18 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface EquipoDao {
-
     @Query("SELECT * FROM Equipos ORDER BY nombre")
     fun getAll(): Flow<List<EquipoEntity>>
-
     @Query("SELECT * FROM Equipos WHERE id = :id")
     suspend fun getById(id: Int): EquipoEntity?
-
     @Query("SELECT * FROM Equipos WHERE id_pais = :idPais ORDER BY nombre")
     fun getByPais(idPais: Int): Flow<List<EquipoEntity>>
-
     @Query("SELECT * FROM Equipos WHERE id_pais IS NULL ORDER BY nombre")
     fun getSinPais(): Flow<List<EquipoEntity>>
-
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(equipo: EquipoEntity): Long
-
     @Update
     suspend fun update(equipo: EquipoEntity)
-
     @Delete
     suspend fun delete(equipo: EquipoEntity)
 }

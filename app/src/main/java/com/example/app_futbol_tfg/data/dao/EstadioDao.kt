@@ -11,25 +11,18 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface EstadioDao {
-
     @Query("SELECT * FROM Estadios ORDER BY nombre")
     fun getAll(): Flow<List<EstadioEntity>>
-
     @Query("SELECT * FROM Estadios WHERE id = :id")
     suspend fun getById(id: Int): EstadioEntity?
-
     @Query("SELECT * FROM Estadios WHERE id_pais = :idPais ORDER BY nombre")
     fun getByPais(idPais: Int): Flow<List<EstadioEntity>>
-
     @Query("SELECT * FROM Estadios WHERE id_localidad = :idLocalidad ORDER BY nombre")
     fun getByLocalidad(idLocalidad: Int): Flow<List<EstadioEntity>>
-
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(estadio: EstadioEntity): Long
-
     @Update
     suspend fun update(estadio: EstadioEntity)
-
     @Delete
     suspend fun delete(estadio: EstadioEntity)
 }

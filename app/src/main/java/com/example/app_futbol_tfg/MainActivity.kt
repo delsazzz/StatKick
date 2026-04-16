@@ -4,44 +4,35 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.app_futbol_tfg.ui.ui.theme.App_Futbol_TFGTheme
-import androidx.lifecycle.lifecycleScope
-import com.example.app_futbol_tfg.data.database.DatabaseProvider
-import com.example.app_futbol_tfg.ui.screens.splash.SplashScreen
-import kotlinx.coroutines.launch
-import androidx.compose.runtime.*
-import com.example.app_futbol_tfg.ui.screens.addmatch.AddMatchScreen
-import com.example.app_futbol_tfg.ui.screens.map.MapScreen
-import com.example.app_futbol_tfg.ui.screens.stats.StatsScreen
-import kotlinx.coroutines.delay
-import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import com.example.app_futbol_tfg.data.database.AppDatabase
+import com.example.app_futbol_tfg.data.database.DatabaseProvider
 import com.example.app_futbol_tfg.ui.screens.addmatch.AddMatchScreen
 import com.example.app_futbol_tfg.ui.screens.home.HomeScreen
 import com.example.app_futbol_tfg.ui.screens.map.MapScreen
 import com.example.app_futbol_tfg.ui.screens.matchdetail.MatchDetailScreen
 import com.example.app_futbol_tfg.ui.screens.stats.StatsScreen
 import com.example.app_futbol_tfg.ui.screens.totalmatches.TotalMatchesScreen
-import androidx.compose.runtime.saveable.rememberSaveable
+import com.example.app_futbol_tfg.ui.ui.theme.App_Futbol_TFGTheme
 
 private const val DEMO_USER_ID = 2
-// Definimos las posibles pantallas que vamos a utilizar
+// Definimos las pantallas que vamos a utilizar en la aplicación
 sealed interface AppScreen {
     data object Home : AppScreen
     data object AddMatch : AppScreen
     data object Stats : AppScreen
     data object Map : AppScreen
     data object TotalMatches : AppScreen
-    data class MatchDetail(val matchId: Int, val from: DetailOrigin) : AppScreen // Un id que enviaremos desde AddMatch
+    // En esta pantalla de MatchDetail además del id del partido, se guarda desde
+    // que pantalla se abrioó para controlar el botón de volver atrás
+    data class MatchDetail(val matchId: Int, val from: DetailOrigin) : AppScreen
 }
-
+// Aquí definimos el origen desde dónde se abrió la pantalla MatchDetail
 enum class DetailOrigin {
     ADD_MATCH,
     SAVED_MATCHES
@@ -50,6 +41,7 @@ enum class DetailOrigin {
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Aquí obtenemos la instancia de la BBDD para toda la app
         val db = DatabaseProvider.getDatabase(applicationContext)
         enableEdgeToEdge()
         setContent {
@@ -61,7 +53,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun TfgApp(db: AppDatabase) {
         var currentScreen by remember { mutableStateOf<AppScreen>(AppScreen.Home) }
-
+        // Estas variables se usan para el estado persistente de la bñusqueda en AddMatch
         var addMatchSearchText by rememberSaveable { mutableStateOf("") }
         var addMatchSelectedSuggestionType by rememberSaveable { mutableStateOf<String?>(null) }
         var addMatchSelectedSuggestionId by rememberSaveable { mutableStateOf<Int?>(null) }

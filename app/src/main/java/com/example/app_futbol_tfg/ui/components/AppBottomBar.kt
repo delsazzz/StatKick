@@ -16,12 +16,11 @@ import com.example.app_futbol_tfg.ui.ui.theme.CardBackground
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
 import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
 
-// Clase que representa cada opción de la barra inferior
+// Modelo que representa cada opción de la barra inferior de navegación
 data class BottomNavItem(
     val label: String, // Texto debajo del icono
     val iconRes: Int, // Icono de la barra
 )
-
 @Composable
 fun AppBottomBar(
     // Representa el índice del elemento seleccionado de la barra
@@ -35,7 +34,6 @@ fun AppBottomBar(
         BottomNavItem("Stats", R.drawable.stats_chart),
         BottomNavItem("Mapa", R.drawable.map_pin)
     )
-
     NavigationBar(
         modifier = androidx.compose.ui.Modifier
             .background(CardBackground)
@@ -56,14 +54,12 @@ fun AppBottomBar(
                         contentDescription = item.label
                     )
                 },
-                // Texto del ítem
                 label = {
                     Text(
                         text = item.label,
                         style = MaterialTheme.typography.labelSmall
                     )
                 },
-                // colores de los ítems
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = PrimaryBlue,
                     selectedTextColor = PrimaryBlue,

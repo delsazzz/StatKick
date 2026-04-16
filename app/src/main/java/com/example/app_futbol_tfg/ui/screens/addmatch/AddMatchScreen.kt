@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,16 +45,11 @@ import com.example.app_futbol_tfg.data.database.AppDatabase
 import com.example.app_futbol_tfg.ui.components.AppBottomBar
 import com.example.app_futbol_tfg.ui.components.AppTopBar
 import com.example.app_futbol_tfg.ui.ui.theme.BackgroundLight
-import com.example.app_futbol_tfg.ui.ui.theme.CardBackground
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
 import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
 import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
 import com.example.app_futbol_tfg.ui.utils.getDrawableId
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.ui.layout.layout
-import androidx.compose.ui.text.style.TextAlign
 import com.example.app_futbol_tfg.ui.components.MatchCard
 import com.example.app_futbol_tfg.ui.components.MatchSuggestionUi
 
@@ -64,25 +58,20 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                    searchText: String, onSearchTextChange: (String) -> Unit, selectedSuggestionType: String?,
                    onSelectedSuggestionTypeChange: (String?) -> Unit, selectedSuggestionId: Int?,
                    onSelectedSuggestionIdChange: (Int?) -> Unit, showSuggestions: Boolean,
-                   onShowSuggestionsChange: (Boolean) -> Unit)  {
-
+                   onShowSuggestionsChange: (Boolean) -> Unit) {
     val context = LocalContext.current
-    // Estas variables van a traer toda la información desde Room
+    // Aquí se recuperan los datos necesarios desde Room para construir la búsqueda y lista de partidos
     val partidos by db.partidoDao().getAll().collectAsState(initial = emptyList())
     val equipos by db.equipoDao().getAll().collectAsState(initial = emptyList())
     val competiciones by db.competicionDao().getAll().collectAsState(initial = emptyList())
     val temporadas by db.temporadaDao().getAll().collectAsState(initial = emptyList())
-    val estadios by db.estadioDao().getAll().collectAsState(initial = emptyList())
     val paises by db.paisDao().getAll().collectAsState(initial = emptyList())
-
-    // Transformamos las listas en mapas clave-valor para que el acceso a los datos sea más eficiente y no recorra listas
+    // Transformamos las listas en mapas para acceder a los datos por id de forma más eficiente
     val equiposMap = equipos.associateBy { it.id }
     val competicionesMap = competiciones.associateBy { it.id }
     val temporadasMap = temporadas.associateBy { it.id }
-    val estadiosMap = estadios.associateBy { it.id }
     val paisesMap = paises.associateBy { it.id }
-
-    // Convertimos a los equipos en sugerencias visuales para el usuario, transforma datos de Room para UI
+    // Convertimos equipos y competiciones en modelos visuales reutilizables para el buscador
     val teamSuggestions = equipos.map { equipo ->
         SearchSuggestionUi.Team(
             id = equipo.id,
@@ -90,7 +79,6 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
             crestRes = getDrawableId(context, equipo.escudo)
         )
     }
-    // Convertimos las competiciones en sugerencias visuales para el usuario
     val competitionSuggestions = competiciones.map { competicion ->
         val pais = competicion.idPais?.let { paisesMap[it] }
         SearchSuggestionUi.Competition(
@@ -99,13 +87,12 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
             flagRes = getDrawableId(context, pais?.bandera)
         )
     }
-
     val selectedSuggestion: SearchSuggestionUi? = when (selectedSuggestionType) {
         "team" -> teamSuggestions.find { it.id == selectedSuggestionId }
         "competition" -> competitionSuggestions.find { it.id == selectedSuggestionId }
         else -> null
     }
-
+    // Adaptamos los partidos a un modelo de UI para reutilizar MatchCard
     val matches = partidos.map { partido ->
         val equipoLocal = equiposMap[partido.idEquipoLocal]
         val equipoVisitante = equiposMap[partido.idEquipoVisitante]
@@ -131,12 +118,8 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
     val filteredSuggestions = if (query.isBlank()) {
         emptyList()
     } else {
-        val teams = teamSuggestions.filter {
-            it.name.lowercase().contains(query)
-        }
-        val competitions = competitionSuggestions.filter {
-            it.name.lowercase().contains(query)
-        }
+        val teams = teamSuggestions.filter { it.name.lowercase().contains(query) }
+        val competitions = competitionSuggestions.filter { it.name.lowercase().contains(query) }
         // Limitamos las sugerencias al número que queramos para no extender demasiado la lista
         (teams + competitions).take(8)
     }
@@ -144,7 +127,6 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
     val suggestedMatches = matches
         .sortedByDescending { it.date }
         .take(10)
-
     val filteredMatches = when (val suggestion = selectedSuggestion) {
         is SearchSuggestionUi.Team -> {
             matches.filter { match ->
@@ -168,7 +150,6 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
             }
         }
     }
-
     Scaffold(
         topBar = {
             AppTopBar(
@@ -197,7 +178,6 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
             val crestSize = if (isSmallScreen) 28.dp else 34.dp
             val resultSize = if (isSmallScreen) 18.sp else 22.sp
             val teamNameSize = if (isSmallScreen) 14.sp else 16.sp
-
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -207,7 +187,7 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                     .imePadding(),
                 verticalArrangement = Arrangement.spacedBy(sectionSpacing)
             ) {
-                // Buscador
+                // Buscador de equipos y competiciones
                 OutlinedTextField(
                     value = searchText,
                     onValueChange = {
@@ -217,9 +197,7 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                         onShowSuggestionsChange(it.isNotBlank()) // Muestra el desplegable de sugerencias si hay texto escrito
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    label = {
-                        Text("Buscar por equipo o competición")
-                    },
+                    label = { Text("Buscar por equipo o competición") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text
@@ -246,89 +224,39 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                 )
                 // Se muestran sugerencias en un desplegable del buscador según lo que se escriba
                 if (showSuggestions && filteredSuggestions.isNotEmpty()) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(18.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            filteredSuggestions.forEach { suggestion ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        // Si pulsamos una sugerencia, se rellena el buscador, se guarda como
-                                        // la selección activa y se oculta el desplegable
-                                        .clickable {
-                                            onSearchTextChange(
-                                                when (suggestion) {
-                                                    is SearchSuggestionUi.Team -> suggestion.name
-                                                    is SearchSuggestionUi.Competition -> suggestion.name
-                                                }
-                                            )
-
-                                            when (suggestion) {
-                                                is SearchSuggestionUi.Team -> {
-                                                    onSelectedSuggestionTypeChange("team")
-                                                    onSelectedSuggestionIdChange(suggestion.id)
-                                                }
-                                                is SearchSuggestionUi.Competition -> {
-                                                    onSelectedSuggestionTypeChange("competition")
-                                                    onSelectedSuggestionIdChange(suggestion.id)
-                                                }
-                                            }
-
-                                            onShowSuggestionsChange(false)
-                                        }
-                                        .padding(horizontal = 14.dp, vertical = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    when (suggestion) {
-                                        is SearchSuggestionUi.Team -> {
-                                            Image(
-                                                painter = painterResource(id = suggestion.crestRes),
-                                                contentDescription = suggestion.name,
-                                                modifier = Modifier.size(24.dp),
-                                                contentScale = ContentScale.Fit
-                                            )
-                                        }
-                                        is SearchSuggestionUi.Competition -> {
-                                            Image(
-                                                painter = painterResource(id = suggestion.flagRes),
-                                                contentDescription = suggestion.name,
-                                                modifier = Modifier.size(24.dp),
-                                                contentScale = ContentScale.Fit
-                                            )
-                                        }
-                                    }
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Text(
-                                        text = when (suggestion) {
-                                            is SearchSuggestionUi.Team -> suggestion.name
-                                            is SearchSuggestionUi.Competition -> suggestion.name
-                                        },
-                                        color = TextPrimary,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
+                    SuggestionsDropdown(
+                        suggestions = filteredSuggestions,
+                        onSuggestionSelected = { suggestion ->
+                            onSearchTextChange(
+                                when (suggestion) {
+                                    is SearchSuggestionUi.Team -> suggestion.name
+                                    is SearchSuggestionUi.Competition -> suggestion.name
+                                }
+                            )
+                            when (suggestion) {
+                                is SearchSuggestionUi.Team -> {
+                                    onSelectedSuggestionTypeChange("team")
+                                    onSelectedSuggestionIdChange(suggestion.id)
+                                }
+                                is SearchSuggestionUi.Competition -> {
+                                    onSelectedSuggestionTypeChange("competition")
+                                    onSelectedSuggestionIdChange(suggestion.id)
                                 }
                             }
+                            onShowSuggestionsChange(false)
                         }
-                    }
+                    )
                 }
                 val sectionTitle = if (query.isBlank() && selectedSuggestion == null) {
                     "Partidos sugeridos"
                 } else {
                     "${filteredMatches.size} partidos encontrados"
                 }
-                // Título de la sección
                 Text(
                     text = sectionTitle,
                     color = TextPrimary,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold)
                 )
-                // Se muestra la lista de partidos filtrados según nuestra búsqueda
                 filteredMatches.forEach { match ->
                     MatchCard(
                         match = match,
@@ -344,7 +272,56 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
         }
     }
 }
-
+// Desplegable de sugerencia mostrado bajo el buscador
+@Composable
+private fun SuggestionsDropdown(suggestions: List<SearchSuggestionUi>, onSuggestionSelected: (SearchSuggestionUi) -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            suggestions.forEach { suggestion ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onSuggestionSelected(suggestion) }
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    when (suggestion) {
+                        is SearchSuggestionUi.Team -> {
+                            Image(
+                                painter = painterResource(id = suggestion.crestRes),
+                                contentDescription = suggestion.name,
+                                modifier = Modifier.size(24.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+                        is SearchSuggestionUi.Competition -> {
+                            Image(
+                                painter = painterResource(id = suggestion.flagRes),
+                                contentDescription = suggestion.name,
+                                modifier = Modifier.size(24.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = when (suggestion) {
+                            is SearchSuggestionUi.Team -> suggestion.name
+                            is SearchSuggestionUi.Competition -> suggestion.name
+                        },
+                        color = TextPrimary,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+        }
+    }
+}
 // Modelo de sugerencias que se utiliza en el buscador para equipos y competiciones
 // Nos permite mezclar en una misma lista ambos
 sealed class SearchSuggestionUi {
@@ -353,7 +330,6 @@ sealed class SearchSuggestionUi {
         val name: String,
         val crestRes: Int
     ) : SearchSuggestionUi()
-
     data class Competition(
         val id: Int,
         val name: String,

@@ -1,4 +1,4 @@
-package com.example.app_futbol_tfg.ui.viewmodel
+package com.example.app_futbol_tfg.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,65 +8,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
 class PartidoJugadorViewModel(private val repository: PartidoJugadorRepository) : ViewModel() {
-
     fun getByPartido(idPartido: Int): Flow<List<PartidoJugadorEntity>> = repository.getByPartido(idPartido)
-
     fun getByJugador(idJugador: Int): Flow<List<PartidoJugadorEntity>> = repository.getByJugador(idJugador)
-
-    suspend fun getTotalGoles(idJugador: Int): Int {
-        return try {
-            repository.getTotalGoles(idJugador)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            0
-        }
-    }
-
-    suspend fun getTotalAsistencias(idJugador: Int): Int {
-        return try {
-            repository.getTotalAsistencias(idJugador)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            0
-        }
-    }
-
-    suspend fun getTotalAmarillas(idJugador: Int): Int {
-        return try {
-            repository.getTotalAmarillas(idJugador)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            0
-        }
-    }
-
-    suspend fun getTotalRojas(idJugador: Int): Int {
-        return try {
-            repository.getTotalRojas(idJugador)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            0
-        }
-    }
-
-    suspend fun getTotalMinutos(idJugador: Int): Int {
-        return try {
-            repository.getTotalMinutos(idJugador)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            0
-        }
-    }
-
-    suspend fun getTotalPartidos(idJugador: Int): Int {
-        return try {
-            repository.getTotalPartidos(idJugador)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            0
-        }
-    }
-
+    suspend fun getTotalGoles(idJugador: Int): Int = repository.getTotalGoles(idJugador)
+    suspend fun getTotalAsistencias(idJugador: Int): Int =  repository.getTotalAsistencias(idJugador)
+    suspend fun getTotalAmarillas(idJugador: Int): Int = repository.getTotalAmarillas(idJugador)
+    suspend fun getTotalRojas(idJugador: Int): Int = repository.getTotalRojas(idJugador)
+    suspend fun getTotalMinutos(idJugador: Int): Int = repository.getTotalMinutos(idJugador)
+    suspend fun getTotalPartidos(idJugador: Int): Int = repository.getTotalPartidos(idJugador)
     fun insertParticipacion(
         idPartido: Int,
         idJugador: Int,
@@ -79,7 +28,6 @@ class PartidoJugadorViewModel(private val repository: PartidoJugadorRepository) 
         rojas: Int = 0
     ) {
         viewModelScope.launch {
-            try {
                 repository.insertParticipacion(
                     PartidoJugadorEntity(
                         idPartido = idPartido,
@@ -93,29 +41,16 @@ class PartidoJugadorViewModel(private val repository: PartidoJugadorRepository) 
                         rojas = rojas
                     )
                 )
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
         }
     }
-
     fun updateParticipacion(partidoJugador: PartidoJugadorEntity) {
         viewModelScope.launch {
-            try {
             repository.updateParticipacion(partidoJugador)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
         }
     }
-
     fun deleteParticipacion(partidoJugador: PartidoJugadorEntity) {
         viewModelScope.launch {
-            try {
             repository.deleteParticipacion(partidoJugador)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
         }
     }
 }

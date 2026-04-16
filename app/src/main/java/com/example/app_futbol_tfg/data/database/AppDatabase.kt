@@ -28,8 +28,9 @@ import com.example.app_futbol_tfg.data.entity.UsuarioEntity
 import com.example.app_futbol_tfg.data.entity.UsuarioLogroEntity
 import com.example.app_futbol_tfg.data.entity.UsuarioPartidoEntity
 
+// Esta es la BBDD principal de la app
+// Aquí se registran las entidades que Room debe convertir en tablas
 @Database(
-    // Aquí señalamos a Room que entidades forman parte de la BBDD
     entities = [
         CompeticionEntity::class,
         EquipoEntity::class,
@@ -45,36 +46,25 @@ import com.example.app_futbol_tfg.data.entity.UsuarioPartidoEntity
         UsuarioLogroEntity::class,
         UsuarioPartidoEntity::class
     ],
-    // La versión indica la de la BBDD, si hubiera cambios en tablas, columnas o relaciones habría que modificarla
+    // La versión debe incrementarse cada vez que el esquema de la BBDD cambie
     version = 2,
-    // exportSchema lo que hace es exportar el esquema de la BBDD a JSON
+    // Este proyecto no expoerta el esquema a ficheros JSON
     exportSchema = false
 )
 
-// Esta clase es abstract porque hereda de la clase base de Room
 abstract class AppDatabase : RoomDatabase() {
     // Todos estos métodos son accesibles para Room
+    // Genera automáticamente la implementación de cada DAO
     abstract fun competicionDao(): CompeticionDao
-
     abstract fun equipoDao(): EquipoDao
-
     abstract fun estadioDao(): EstadioDao
-
     abstract fun jugadorDao(): JugadorDao
-
     abstract fun localidadDao(): LocalidadDao
-
     abstract fun logroDao(): LogroDao
-
     abstract fun paisDao(): PaisDao
-
     abstract fun partidoDao(): PartidoDao
-
     abstract fun partidoJugadorDao(): PartidoJugadorDao
-
     abstract fun temporadaDao(): TemporadaDao
-
     abstract fun usuarioDao(): UsuarioDao
-
     abstract fun usuarioPartidoDao(): UsuarioPartidoDao
 }

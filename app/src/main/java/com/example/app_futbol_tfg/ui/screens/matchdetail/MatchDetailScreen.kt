@@ -1,5 +1,7 @@
 package com.example.app_futbol_tfg.ui.screens.matchdetail
 
+import android.database.sqlite.SQLiteException
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -49,7 +51,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.app_futbol_tfg.R
@@ -69,30 +70,62 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import com.example.app_futbol_tfg.data.entity.PartidoEntity
+import com.example.app_futbol_tfg.data.entity.UsuarioPartidoEntity
+import java.util.Date
+import java.util.Locale
 
+private const val TAG = "MatchDetailScreen"
 @Composable
 fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> Unit) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     var menuExpanded by remember { mutableStateOf(false) }
     var showRemoveDialog by remember { mutableStateOf(false) }
-
     // Se hace la llamada con el matchId y se guarda el resultado en partido
     val partidoState = produceState<com.example.app_futbol_tfg.data.entity.PartidoEntity?>(initialValue = null, matchId) {
         value = try {
             db.partidoDao().getById(matchId)
-        } catch (e: Exception) {
-            e.printStackTrace()
+        } catch (e: SQLiteException) {
+            Log.e(TAG, "Error al cargar el partido con $matchId", e)
+            null
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Estado inválido al cargar el partido con id $matchId", e)
             null
         }
     }
     val partido = partidoState.value
     // Con esto intentamos evitar que haya un crash cuando carga el partido
     if (partido == null) {
-        Text("Cargando partido...")
+        Scaffold(
+            topBar = {
+                AppTopBar(
+                    title = "Detalle del partido",
+                    showBackButton = true,
+                    onBackClick = onBack
+                )
+            },
+            containerColor = BackgroundLight
+        ) { innerPadding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .background(BackgroundLight),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Cargando partido...",
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        }
         return
     }
-
     // Cargamos datos auxiliares para utilizar en la pantalla
     val equipos by db.equipoDao().getAll().collectAsState(initial = emptyList())
     val competiciones by db.competicionDao().getAll().collectAsState(initial = emptyList())
@@ -115,16 +148,19 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
     val competicion = partido.idCompeticion?.let { competicionesMap[it] }
     val temporada = partido.idTemporada?.let { temporadasMap[it] }
     val estadio = partido.idEstadio?.let { estadiosMap[it] }
-    val pais = competicion?.idPais?.let { paisesMap[it] }
-    val pais_estadio = estadio?.idPais.let {paisesMap[it]}
-    val localidad = estadio?.idLocalidad?.let { localidadesMap[it] }
+    val paisCompeticion = competicion?.idPais?.let { paisesMap[it] }
+    val paisEstadio = estadio?.idPais?.let {paisesMap[it]}
+    val localidadEstadio = estadio?.idLocalidad?.let { localidadesMap[it] }
 
     // Este paso nos va a decir si el partido ya está añadido o no
     val alreadyAddedState = produceState(initialValue = false, matchId, userId) {
         value = try {
             db.usuarioPartidoDao().getRelacion(userId, matchId) != null
-        } catch (e: Exception) {
-            e.printStackTrace()
+        } catch (e: SQLiteException) {
+            Log.e(TAG, "Error al comprobar la relación usuario-partido ($userId, $matchId", e)
+            false
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Estado inválido al comprobar la relación usuario-partido ($userId, $matchId", e)
             false
         }
     }
@@ -132,7 +168,6 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
     LaunchedEffect(alreadyAddedState.value) {
         alreadyAdded = alreadyAddedState.value
     }
-    val scope = rememberCoroutineScope()
     // Cargamos los jugadores que han participado en los partidos desde Room
     val jugadoresPartido by db.jugadorDao().getDetalleByPartido(matchId).collectAsState(initial = emptyList())
     // Separamos a los jugadores por equipo local y visitante
@@ -148,7 +183,7 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
             apellido = getApellidoJugador(jugador.apellido1),
             crestRes = localCrestRes,
             titular = jugador.titular,
-            minutos_jugados = jugador.minutos_jugados
+            minutosJugados = jugador.minutosJugados
         )
     }
     val visitantePlayersUi = jugadoresVisitantes.map { jugador ->
@@ -157,10 +192,9 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
             apellido = getApellidoJugador(jugador.apellido1),
             crestRes = visitanteCrestRes,
             titular = jugador.titular,
-            minutos_jugados = jugador.minutos_jugados
+            minutosJugados = jugador.minutosJugados
         )
     }
-
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -189,7 +223,6 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
             val teamNameSize = if (isSmallScreen) 14.sp else 16.sp
             val playerCardWidth = if (isSmallScreen) 96.dp else 108.dp
             val playerAvatarSize = if (isSmallScreen) 52.dp else 60.dp
-
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -206,16 +239,13 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                         horizontalArrangement = Arrangement.End
                     ) {
                         Box {
-                            IconButton(
-                                onClick = { menuExpanded = true }
-                            ) {
+                            IconButton(onClick = { menuExpanded = true }) {
                                 Icon(
                                     imageVector = Icons.Default.MoreVert,
                                     contentDescription = "Más opciones",
                                     tint = TextPrimary
                                 )
                             }
-
                             DropdownMenu(
                                 expanded = menuExpanded,
                                 onDismissRequest = { menuExpanded = false }
@@ -231,169 +261,28 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                         }
                     }
                 }
-                // Bloque principal con resultado, datos del partido
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = CardBackground
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 24.dp, horizontal = 18.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(18.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            // Equipo local
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Image(
-                                    painter = painterResource(id = getDrawableId(context, equipoLocal?.escudo)),
-                                    contentDescription = equipoLocal?.nombre,
-                                    modifier = Modifier.size(crestSize),
-                                    contentScale = ContentScale.Fit
-                                )
-                                Spacer(modifier = Modifier.height(10.dp))
-                                Text(
-                                    text = equipoLocal?.nombre ?: "Local",
-                                    color = TextPrimary,
-                                    textAlign = TextAlign.Center,
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        fontSize = teamNameSize,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                )
-                            }
-                            // Resultado
-                            Text(
-                                text = "${partido.golesLocal} - ${partido.golesVisitante}",
-                                color = PrimaryBlue,
-                                textAlign = TextAlign.Center,
-                                style = MaterialTheme.typography.headlineMedium.copy(
-                                    fontSize = scoreSize,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            )
-                            // Equipo visitante
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Image(
-                                    painter = painterResource(id = getDrawableId(context, equipoVisitante?.escudo)),
-                                    contentDescription = equipoVisitante?.nombre,
-                                    modifier = Modifier.size(crestSize),
-                                    contentScale = ContentScale.Fit
-                                )
-                                Spacer(modifier = Modifier.height(10.dp))
-                                Text(
-                                    text = equipoVisitante?.nombre ?: "Visitante",
-                                    color = TextPrimary,
-                                    textAlign = TextAlign.Center,
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        fontSize = teamNameSize,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                )
-                            }
-                        }
-                    }
-                }
-                // Bloque con más información del partido
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = CardBackground
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(18.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = partido.fecha,
-                                color = TextSecondary,
-                                style = MaterialTheme.typography.bodyMedium,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            DotSeparator()
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = temporada?.temporada ?: "Temporada",
-                                color = TextSecondary,
-                                style = MaterialTheme.typography.bodyMedium,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            DotSeparator()
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = competicion?.nombre ?: "Competición",
-                                color = TextSecondary,
-                                style = MaterialTheme.typography.bodyMedium,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Image(
-                                painter = painterResource(id = getDrawableId(context, pais?.bandera)),
-                                contentDescription = pais?.nombre,
-                                modifier = Modifier.size(18.dp),
-                                contentScale = ContentScale.Crop
-                            )
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ){
-                            Image(
-                                painter = painterResource(id = R.drawable.logo_estadio),
-                                contentDescription = "Logo de estadio",
-                                modifier = Modifier.size(18.dp),
-                                contentScale = ContentScale.Crop
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = estadio?.nombre ?: "Estadio",
-                                color = TextPrimary,
-                                textAlign = TextAlign.Center,
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.SemiBold
-                                )
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            DotSeparator()
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "${localidad?.nombre} (${pais_estadio?.nombre})",
-                                color = TextSecondary,
-                                style = MaterialTheme.typography.bodyMedium,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-                }
+                MatchSummaryCard(
+                    context = context,
+                    partido = partido,
+                    equipoLocalNombre = equipoLocal?.nombre ?: "Local",
+                    equipoVisitanteNombre = equipoVisitante?.nombre ?: "Visitante",
+                    equipoLocalEscudo = equipoLocal?.escudo,
+                    equipoVisitanteEscudo = equipoVisitante?.escudo,
+                    crestSize = crestSize,
+                    scoreSize = scoreSize,
+                    teamNameSize = teamNameSize
+                )
+                MatchInfoCard(
+                    context = context,
+                    fecha = partido.fecha,
+                    temporada = temporada?.temporada ?: "Temporada",
+                    competicion = competicion?.nombre ?: "Competición",
+                    banderaCompeticion = paisCompeticion?.bandera,
+                    nombrePaisCompeticion = paisCompeticion?.nombre,
+                    estadio = estadio?.nombre ?: "Estadio",
+                    localidad = localidadEstadio?.nombre ?: "Localidad",
+                    paisEstadio = paisEstadio?.nombre ?: "País"
+                )
                 // Bloque con jugadores del partido
                 Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -459,10 +348,10 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                             try {
                                 val fechaActual = java.text.SimpleDateFormat(
                                     "yyyy-MM-dd",
-                                    java.util.Locale.getDefault()
-                                ).format(java.util.Date())
+                                    Locale.getDefault()
+                                ).format(Date())
                                 db.usuarioPartidoDao().insert(
-                                    com.example.app_futbol_tfg.data.entity.UsuarioPartidoEntity(
+                                    UsuarioPartidoEntity(
                                         idUsuario = userId,
                                         idPartido = matchId,
                                         fechaRegistro = fechaActual
@@ -470,8 +359,11 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                                 )
                                 alreadyAdded = true
                                 snackbarHostState.showSnackbar("Partido añadido correctamente")
-                            } catch (e: Exception) {
-                                e.printStackTrace()
+                            } catch (e: SQLiteException) {
+                                Log.e(TAG, "Error al añadir el partido $matchId al perfil del usuario $userId", e)
+                                snackbarHostState.showSnackbar("No se pudo añadir el partido")
+                            } catch (e: IllegalStateException) {
+                                Log.e(TAG, "Estado inválido al añadir el partido $matchId al perfil del usuario $userId", e)
                                 snackbarHostState.showSnackbar("No se pudo añadir el partido")
                             }
                         }
@@ -524,8 +416,11 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                                 db.usuarioPartidoDao().deleteRelacion(userId, matchId)
                                 alreadyAdded = false
                                 snackbarHostState.showSnackbar("Partido eliminado de tu perfil")
-                            } catch (e: Exception) {
-                                e.printStackTrace()
+                            } catch (e: SQLiteException) {
+                                Log.e(TAG, "Error al eliminar la relación usuario-partido ($userId, $matchId)", e)
+                                snackbarHostState.showSnackbar("No se pudo eliminar el partido")
+                            } catch (e: IllegalStateException) {
+                                Log.e(TAG, "Estado inválido al eliminar la relación usuario-partido ($userId, $matchId)", e)
                                 snackbarHostState.showSnackbar("No se pudo eliminar el partido")
                             }
                         }
@@ -545,13 +440,203 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
     }
 }
 
+@Composable
+private fun MatchSummaryCard(
+    context: android.content.Context,
+    partido: PartidoEntity,
+    equipoLocalNombre: String,
+    equipoVisitanteNombre: String,
+    equipoLocalEscudo: String?,
+    equipoVisitanteEscudo: String?,
+    crestSize: Dp,
+    scoreSize: androidx.compose.ui.unit.TextUnit,
+    teamNameSize: androidx.compose.ui.unit.TextUnit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = CardBackground),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 24.dp, horizontal = 18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(18.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Image(
+                        painter = painterResource(id = getDrawableId(context, equipoLocalEscudo)),
+                        contentDescription = equipoLocalNombre,
+                        modifier = Modifier.size(crestSize),
+                        contentScale = ContentScale.Fit
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = equipoLocalNombre,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        color = TextPrimary,
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontSize = teamNameSize,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    )
+                }
+                Text(
+                    text = "${partido.golesLocal} - ${partido.golesVisitante}",
+                    color = PrimaryBlue,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontSize = scoreSize,
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Image(
+                        painter = painterResource(id = getDrawableId(context, equipoVisitanteEscudo)),
+                        contentDescription = equipoVisitanteNombre,
+                        modifier = Modifier.size(crestSize),
+                        contentScale = ContentScale.Fit
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = equipoVisitanteNombre,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        color = TextPrimary,
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontSize = teamNameSize,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    )
+                }
+            }
+        }
+    }
+}
+@Composable
+private fun MatchInfoCard(
+    context: android.content.Context,
+    fecha: String,
+    temporada: String,
+    competicion: String,
+    banderaCompeticion: String?,
+    nombrePaisCompeticion: String?,
+    estadio: String,
+    localidad: String,
+    paisEstadio: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = CardBackground),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = fecha,
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                DotSeparator()
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = temporada,
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                DotSeparator()
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = competicion,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Image(
+                    painter = painterResource(id = getDrawableId(context, banderaCompeticion)),
+                    contentDescription = nombrePaisCompeticion,
+                    modifier = Modifier.size(18.dp),
+                    contentScale = ContentScale.Crop
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.logo_estadio),
+                    contentDescription = "Logo de estadio",
+                    modifier = Modifier.size(18.dp),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = estadio,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = TextPrimary,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.SemiBold
+                    )
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                DotSeparator()
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "$localidad ($paisEstadio)",
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+    }
+}
 // Modelo para los jugadores
 data class PlayerMatchUi(
     val nombre: String,
     val apellido: String,
     val crestRes: Int,
     val titular: Boolean,
-    val minutos_jugados: Int?
+    val minutosJugados: Int?
 )
 // Modelo para los jugadores
 data class JugadorPartidoDetalle(
@@ -561,15 +646,15 @@ data class JugadorPartidoDetalle(
     val apellido2: String? = null,
     val idEquipo: Int,
     val titular: Boolean,
-    val minutos_jugados: Int?
+    val minutosJugados: Int?
 )
 
 // Minicard horizontal de jugador que muestra el avatar genérico, escudo, nombre
 @Composable
 private fun PlayerMiniCard(
     player: PlayerMatchUi,
-    width: androidx.compose.ui.unit.Dp,
-    avatarSize: androidx.compose.ui.unit.Dp
+    width: Dp,
+    avatarSize: Dp
 ) {
     Card(
         modifier = Modifier
@@ -648,7 +733,7 @@ private fun PlayerMiniCard(
                     .padding(horizontal = 6.dp, vertical = 3.dp)
             ) {
                 Text(
-                    text = "${player.minutos_jugados ?: 0}'",
+                    text = "${player.minutosJugados ?: 0}'",
                     color = Color.White,
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Bold
@@ -658,7 +743,6 @@ private fun PlayerMiniCard(
         }
     }
 }
-
 private fun getApellidoJugador(
     apellido1: String?
 ): String {

@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -22,8 +21,7 @@ import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
 import androidx.compose.foundation.layout.statusBarsPadding
 
 // Esta función se puede reutilizar para todas las pantallas 
-// que incluyan una barra superior y se personaliza el título y botones 
-// en función
+// Muestra título, botón de retroceso y una acción opcional
 @Composable
 fun AppTopBar(
     title: String, // Título de cada pantalla

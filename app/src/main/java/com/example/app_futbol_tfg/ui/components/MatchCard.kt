@@ -24,57 +24,55 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.example.app_futbol_tfg.ui.ui.theme.CardBackground
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
 import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
 import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
 
-    //  Modelo visual temporal para la maqueta de partidos sugeridos.
-    // Más adelante vendrá de Room o de la fuente real de datos.
-    data class MatchSuggestionUi(
-        val id: Int,
-        val homeTeam: String,
-        val homeCrest: Int,
-        val result: String,
-        val awayTeam: String,
-        val awayCrest: Int,
-        val date: String,
-        val season: String,
-        val competition: String,
-        val countryFlag: Int
-    )
-
-    // Card reutilizable de un partido sugerido.
-    @SuppressLint("NotConstructor")
-    @Composable
-    fun MatchCard(
-        match: MatchSuggestionUi,
-        crestSize: androidx.compose.ui.unit.Dp,
-        resultSize: androidx.compose.ui.unit.TextUnit,
-        teamNameSize: androidx.compose.ui.unit.TextUnit,
-        cardPadding: androidx.compose.ui.unit.Dp,
-        onOpenMatchDetail: (Int) -> Unit
+//  Modelo visual temporal para la maqueta de partidos sugeridos.
+data class MatchSuggestionUi(
+    val id: Int,
+    val homeTeam: String,
+    val homeCrest: Int,
+    val result: String,
+    val awayTeam: String,
+    val awayCrest: Int,
+    val date: String,
+    val season: String,
+    val competition: String,
+    val countryFlag: Int
+)
+// Card reutilizable de un partido sugerido.
+//@SuppressLint("NotConstructor")
+@Composable
+fun MatchCard(
+    match: MatchSuggestionUi,
+    crestSize: Dp,
+    resultSize: TextUnit,
+    teamNameSize: TextUnit,
+    cardPadding: Dp,
+    onOpenMatchDetail: (Int) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onOpenMatchDetail(match.id) },
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = CardBackground
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Card(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable {
-                    onOpenMatchDetail(match.id)
-                },
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = CardBackground
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                .padding(cardPadding),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(cardPadding),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                // Fila principal del partido
+            // Fila principal del partido
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -83,6 +81,8 @@ import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
                     Text(
                         text = match.homeTeam,
                         modifier = Modifier.weight(1f),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                         color = TextPrimary,
                         textAlign = TextAlign.End,
                         style = MaterialTheme.typography.bodyLarge.copy(
@@ -121,6 +121,8 @@ import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
                     Text(
                         text = match.awayTeam,
                         modifier = Modifier.weight(1f),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                         color = TextPrimary,
                         textAlign = TextAlign.Start,
                         style = MaterialTheme.typography.bodyLarge.copy(
@@ -161,7 +163,7 @@ import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
                     Spacer(modifier = Modifier.width(10.dp))
                     Image(
                         painter = painterResource(id = match.countryFlag),
-                        contentDescription = "País competición",
+                        contentDescription = "País  de la competición",
                         modifier = Modifier.size(18.dp),
                         contentScale = ContentScale.Crop
                     )
@@ -169,7 +171,6 @@ import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
             }
         }
     }
-
     // Separador entre texto con forma de punto ·
     @Composable
     private fun DotSeparator() {
