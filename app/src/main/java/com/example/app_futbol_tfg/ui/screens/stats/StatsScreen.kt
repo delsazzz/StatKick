@@ -51,35 +51,29 @@ import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
 import androidx.compose.ui.platform.LocalContext
 import com.example.app_futbol_tfg.ui.utils.getDrawableId
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 
 @Composable
 fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
-
     val totalPartidos by db.usuarioPartidoDao().countByUsuarioFlow(userId).collectAsState(initial = 0)
-
     val topEquipos by db.usuarioPartidoDao().getTopEquiposVistos(userId).collectAsState(initial = emptyList())
     val totalEquiposDistintos by db.usuarioPartidoDao().countEquiposDistintosVistos(userId).collectAsState(initial = 0)
-
     val estadiosVistos by db.usuarioPartidoDao().getEstadiosVistos(userId).collectAsState(initial = emptyList())
     val totalEstadiosDistintos by db.usuarioPartidoDao().countEstadiosDistintosVistos(userId).collectAsState(initial = 0)
-
     val jugadoresMasVistos by db.partidoJugadorDao().getJugadoresMasVistos(userId).collectAsState(initial = emptyList())
     val totalJugadoresDistintos by db.partidoJugadorDao().countJugadoresDistintosVistos(userId).collectAsState(initial = 0)
-
     val goleadoresVistos by db.partidoJugadorDao().getTopGoleadoresVistos(userId).collectAsState(initial = emptyList())
     val totalGolesVistos by db.partidoJugadorDao().getTotalGolesVistos(userId).collectAsState(initial = 0)
-
     val asistentesVistos by db.partidoJugadorDao().getTopAsistentesVistos(userId).collectAsState(initial = emptyList())
     val totalAsistenciasVistas by db.partidoJugadorDao().getTotalAsistenciasVistas(userId).collectAsState(initial = 0)
-
     val amarillasVistas by db.partidoJugadorDao().getTopAmarillasVistas(userId).collectAsState(initial = emptyList())
     val totalAmarillasVistas by db.partidoJugadorDao().getTotalAmarillasVistas(userId).collectAsState(initial = 0)
-
     val rojasVistas by db.partidoJugadorDao().getTopRojasVistas(userId).collectAsState(initial = emptyList())
     val totalRojasVistas by db.partidoJugadorDao().getTotalRojasVistas(userId).collectAsState(initial = 0)
 
     val context = LocalContext.current
-
+    // Se transforman los resultados en modelos visuales reutilizables por la UI.
     val equiposVistosUi = topEquipos.map {
         TeamStatUi(
             name = it.nombre,
@@ -87,7 +81,6 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
             matchesCount = it.vecesVisto.toString()
         )
     }
-
     val jugadoresVistosUi = jugadoresMasVistos.map {
         PlayerStatUi(
             nombre = it.nombre,
@@ -96,7 +89,6 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
             stat = it.total.toString()
         )
     }
-
     val goleadoresVistosUi = goleadoresVistos.map {
         PlayerStatUi(
             nombre = it.nombre,
@@ -105,7 +97,6 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
             stat = it.total.toString()
         )
     }
-
     val asistentesVistosUi = asistentesVistos.map {
         PlayerStatUi(
             nombre = it.nombre,
@@ -114,7 +105,6 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
             stat = it.total.toString()
         )
     }
-
     val amarillasVistasUi = amarillasVistas.map {
         PlayerStatUi(
             nombre = it.nombre,
@@ -123,7 +113,6 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
             stat = it.total.toString()
         )
     }
-
     val rojasVistasUi = rojasVistas.map {
         PlayerStatUi(
             nombre = it.nombre,
@@ -132,14 +121,12 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
             stat = it.total.toString()
         )
     }
-
     val estadiosVistosUi = estadiosVistos.map {
         StadiumStatUi(
             name = it.nombre,
             iconRes = R.drawable.map_pin
         )
     }
-
     Scaffold(
         topBar = {
             AppTopBar(
@@ -154,7 +141,6 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
         },
         containerColor = BackgroundLight
     ) { innerPadding ->
-
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
@@ -162,11 +148,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
                 .background(BackgroundLight)
                 .safeDrawingPadding()
         ) {
-            // ------------------------------------------------------------
-            // AJUSTES ADAPTATIVOS
-            // ------------------------------------------------------------
             val isSmallScreen = maxWidth < 360.dp || maxHeight < 700.dp
-
             val horizontalPadding = if (isSmallScreen) 14.dp else 20.dp
             val sectionSpacing = if (isSmallScreen) 18.dp else 24.dp
             val totalSize = if (isSmallScreen) 26.sp else 34.sp
@@ -174,7 +156,6 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
             val cardWidth = if (isSmallScreen) 115.dp else 128.dp
             val avatarSize = if (isSmallScreen) 50.dp else 58.dp
             val crestSize = if (isSmallScreen) 22.dp else 26.dp
-
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -183,10 +164,6 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
                     .navigationBarsPadding(),
                 verticalArrangement = Arrangement.spacedBy(sectionSpacing)
             ) {
-
-                // ============================================================
-                // BLOQUE 1 - PARTIDOS Y EQUIPOS VISTOS
-                // ============================================================
                 StatsSection(
                     title = "Partidos y equipos vistos",
                     totalLabel = "Partidos vistos",
@@ -202,10 +179,6 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
                         )
                     }
                 }
-
-                // ============================================================
-                // BLOQUE 2 - JUGADORES MÁS VISTOS
-                // ============================================================
                 StatsSection(
                     title = "Jugadores más vistos",
                     totalLabel = "Jugadores vistos",
@@ -222,10 +195,6 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
                         )
                     }
                 }
-
-                // ============================================================
-                // BLOQUE 3 - GOLEADORES VISTOS
-                // ============================================================
                 StatsSection(
                     title = "Goleadores vistos",
                     totalLabel = "Goles vistos",
@@ -242,10 +211,6 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
                         )
                     }
                 }
-
-                // ============================================================
-                // BLOQUE 4 - ASISTENCIAS
-                // ============================================================
                 StatsSection(
                     title = "Asistencias vistas",
                     totalLabel = "Asistencias",
@@ -262,10 +227,6 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
                         )
                     }
                 }
-
-                // ============================================================
-                // BLOQUE 5 - TARJETAS
-                // ============================================================
                 StatsSection(
                     title = "Jugadores con más amarillas",
                     totalLabel = "Amarillas vistas",
@@ -282,7 +243,6 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
                         )
                     }
                 }
-
                 StatsSection(
                     title = "Jugadores con más rojas",
                     totalLabel = "Rojas vistas",
@@ -299,10 +259,6 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
                         )
                     }
                 }
-
-                // ============================================================
-                // BLOQUE 6 - ESTADIOS
-                // ============================================================
                 StatsSection(
                     title = "Estadios vistos",
                     totalLabel = "Estadios",
@@ -323,14 +279,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
         }
     }
 }
-
-/**
- * Sección reutilizable de estadísticas.
- * Muestra:
- * - título del bloque
- * - total grande
- * - scroll horizontal de tarjetas
- */
+// Sección reutilizable para mostrar un total principal y una fila horizontal de tarjetas
 @Composable
 private fun StatsSection(
     title: String,
@@ -354,9 +303,7 @@ private fun StatsSection(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = CardBackground
-            ),
+            colors = CardDefaults.cardColors(containerColor = CardBackground),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Column(
@@ -365,8 +312,6 @@ private fun StatsSection(
                     .padding(18.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-
-                // Total principal grande
                 Column(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
@@ -377,7 +322,6 @@ private fun StatsSection(
                             fontSize = subtitleSize
                         )
                     )
-
                     Text(
                         text = totalValue,
                         color = PrimaryBlue,
@@ -387,8 +331,6 @@ private fun StatsSection(
                         )
                     )
                 }
-
-                // Scroll horizontal con tarjetas
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -401,49 +343,35 @@ private fun StatsSection(
         }
     }
 }
-
-/**
- * Modelo visual de equipos vistos.
- */
+ // Modelo visual de equipos vistos
 data class TeamStatUi(
     val name: String,
     val crestRes: Int,
     val matchesCount: String
 )
-
-/**
- * Modelo visual de jugadores.
- */
+// Modelo visual de jugadores
 data class PlayerStatUi(
     val nombre: String,
     val apellido: String,
     val crestRes: Int,
     val stat: String
 )
-
-/**
- * Modelo visual de estadios.
- */
+// Modelo visual de estadios.
 data class StadiumStatUi(
     val name: String,
     val iconRes: Int
 )
-
-/**
- * Minicard para equipos con escudo y número de partidos.
- */
+// Minicard para equipos con escudo y número de partidos.
 @Composable
 private fun TeamMiniCard(
     item: TeamStatUi,
-    cardWidth: androidx.compose.ui.unit.Dp,
-    crestSize: androidx.compose.ui.unit.Dp
+    cardWidth: Dp,
+    crestSize: Dp
 ) {
     Card(
         modifier = Modifier.width(cardWidth),
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = BackgroundLight
-        )
+        colors = CardDefaults.cardColors(containerColor = BackgroundLight)
     ) {
         Column(
             modifier = Modifier
@@ -475,6 +403,7 @@ private fun TeamMiniCard(
                     color = TextPrimary,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontWeight = FontWeight.Medium
                     )
@@ -483,23 +412,18 @@ private fun TeamMiniCard(
         }
     }
 }
-
-/**
- * Minicard para jugadores con avatar genérico + escudo + nombre.
- */
+// Tarjeta compacta para jugadores con avatar, escudo y valor estadístico
 @Composable
 private fun PlayerMiniStatCard(
     item: PlayerStatUi,
-    cardWidth: androidx.compose.ui.unit.Dp,
-    avatarSize: androidx.compose.ui.unit.Dp,
-    crestSize: androidx.compose.ui.unit.Dp
+    cardWidth: Dp,
+    avatarSize: Dp,
+    crestSize: Dp
 ) {
     Card(
         modifier = Modifier.width(cardWidth),
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = BackgroundLight
-        )
+        colors = CardDefaults.cardColors(containerColor = BackgroundLight)
     ) {
         Column(
             modifier = Modifier
@@ -522,7 +446,6 @@ private fun PlayerMiniStatCard(
                     contentScale = ContentScale.Fit
                 )
             }
-
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -533,7 +456,6 @@ private fun PlayerMiniStatCard(
                     modifier = Modifier.size(crestSize),
                     contentScale = ContentScale.Fit
                 )
-
                 Text(
                     text = item.stat,
                     color = PrimaryBlue,
@@ -552,6 +474,7 @@ private fun PlayerMiniStatCard(
                     text = item.nombre,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     color = TextPrimary,
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontWeight = FontWeight.SemiBold
@@ -561,6 +484,7 @@ private fun PlayerMiniStatCard(
                     text = item.apellido,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     color = TextPrimary,
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontWeight = FontWeight.Medium
@@ -570,10 +494,7 @@ private fun PlayerMiniStatCard(
         }
     }
 }
-
-/**
- * Minicard para estadios vistos.
- */
+// Tarjeta compacta para estadios vistos
 @Composable
 private fun StadiumMiniCard(
     item: StadiumStatUi,
@@ -608,6 +529,7 @@ private fun StadiumMiniCard(
                     color = TextPrimary,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontWeight = FontWeight.Medium
                     )

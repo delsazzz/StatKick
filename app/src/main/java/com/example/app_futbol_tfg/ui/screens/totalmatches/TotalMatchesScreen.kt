@@ -28,6 +28,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.app_futbol_tfg.data.database.AppDatabase
@@ -41,25 +43,21 @@ import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
 import com.example.app_futbol_tfg.ui.utils.getDrawableId
 
 @Composable
-fun TotalMatchesScreen(
-    userId: Int,
-    db: AppDatabase,
-    onBack: () -> Unit,
-    onOpenMatchDetail: (Int) -> Unit
-) {
+fun TotalMatchesScreen(userId: Int, db: AppDatabase, onBack: () -> Unit, onOpenMatchDetail: (Int) -> Unit) {
     val context = LocalContext.current
-
-    val partidos by db.usuarioPartidoDao().getPartidosByUsuario(userId).collectAsState(initial = emptyList())
+    // Se recuperan los partidos guardados por el usuario y los datos auxiliares necesarios
+    val partidos by db.usuarioPartidoDao().getPartidosByUsuario(userId)
+        .collectAsState(initial = emptyList())
     val equipos by db.equipoDao().getAll().collectAsState(initial = emptyList())
     val competiciones by db.competicionDao().getAll().collectAsState(initial = emptyList())
     val temporadas by db.temporadaDao().getAll().collectAsState(initial = emptyList())
     val paises by db.paisDao().getAll().collectAsState(initial = emptyList())
-
+    // Se transforman las listas en mapas para acceder a cada elemento por id
     val equiposMap = equipos.associateBy { it.id }
     val competicionesMap = competiciones.associateBy { it.id }
     val temporadasMap = temporadas.associateBy { it.id }
     val paisesMap = paises.associateBy { it.id }
-
+    // Se adaptan los partidos a un modelo visual reutilizable por MatchCard
     val matches = partidos.map { partido ->
         val equipoLocal = equiposMap[partido.idEquipoLocal]
         val equipoVisitante = equiposMap[partido.idEquipoVisitante]
@@ -80,13 +78,12 @@ fun TotalMatchesScreen(
             countryFlag = getDrawableId(context, pais?.bandera)
         )
     }
-
+    // Los partidos se agrupan por año a partir de la fecha y se ordenan de más reciente a más antiguo
     val groupedMatches = matches
         .groupBy { it.date.take(4) }
         .toSortedMap(compareByDescending { it })
-
+    // Guarda qué años están desplegados en pantalla
     var expandedYears by remember { mutableStateOf(setOf<String>()) }
-
     Scaffold(
         topBar = {
             AppTopBar(
@@ -111,7 +108,6 @@ fun TotalMatchesScreen(
             val crestSize = if (isSmallScreen) 28.dp else 34.dp
             val resultSize = if (isSmallScreen) 18.sp else 22.sp
             val teamNameSize = if (isSmallScreen) 14.sp else 16.sp
-
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -128,54 +124,77 @@ fun TotalMatchesScreen(
                     )
                 } else {
                     groupedMatches.forEach { (year, matchesOfYear) ->
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    expandedYears = if (expandedYears.contains(year)) {
-                                        expandedYears - year
-                                    } else {
-                                        expandedYears + year
-                                    }
-                                },
-                            colors = CardDefaults.cardColors(
-                                containerColor = CardBackground
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Text(
-                                    text = year,
-                                    color = PrimaryBlue,
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                )
-
-                                if (expandedYears.contains(year)) {
-                                    matchesOfYear.forEach { match ->
-                                        MatchCard(
-                                            match = match,
-                                            crestSize = crestSize,
-                                            resultSize = resultSize,
-                                            teamNameSize = teamNameSize,
-                                            cardPadding = cardPadding,
-                                            onOpenMatchDetail = onOpenMatchDetail
-                                        )
-                                    }
+                        YearMatchesCard(
+                            year = year,
+                            matchesOfYear = matchesOfYear,
+                            isExpanded = expandedYears.contains(year),
+                            onToggleExpanded = {
+                                expandedYears = if (expandedYears.contains(year)) {
+                                    expandedYears - year
+                                } else {
+                                    expandedYears + year
                                 }
-                            }
-                        }
+                            },
+                            crestSize = crestSize,
+                            resultSize = resultSize,
+                            teamNameSize = teamNameSize,
+                            cardPadding = cardPadding,
+                            onOpenMatchDetail = onOpenMatchDetail
+                        )
                     }
                 }
-
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
+    }
+}
+// Tarjeta que agrupa los partidos de un mismo año y permite desplegarlos o contraerlos
+@Composable
+private fun YearMatchesCard(
+    year: String,
+    matchesOfYear: List<MatchSuggestionUi>,
+    isExpanded: Boolean,
+    onToggleExpanded: () -> Unit,
+    crestSize: Dp,
+    resultSize: TextUnit,
+    teamNameSize: TextUnit,
+    cardPadding: Dp,
+    onOpenMatchDetail: (Int) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onToggleExpanded() },
+        colors = CardDefaults.cardColors(
+            containerColor = CardBackground
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+       Column(
+           modifier = Modifier
+               .fillMaxWidth()
+               .padding(16.dp),
+           verticalArrangement = Arrangement.spacedBy(12.dp)
+       ) {
+           Text(
+               text = year,
+               color = PrimaryBlue,
+               style = MaterialTheme.typography.titleLarge.copy(
+                   fontWeight = FontWeight.Bold
+               )
+           )
+           if (isExpanded) {
+               matchesOfYear.forEach { match ->
+                   MatchCard(
+                       match = match,
+                       crestSize = crestSize,
+                       resultSize = resultSize,
+                       teamNameSize = teamNameSize,
+                       cardPadding = cardPadding,
+                       onOpenMatchDetail = onOpenMatchDetail
+                   )
+               }
+           }
+       }
     }
 }

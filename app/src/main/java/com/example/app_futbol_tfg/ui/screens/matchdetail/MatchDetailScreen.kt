@@ -439,7 +439,6 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
         )
     }
 }
-
 @Composable
 private fun MatchSummaryCard(
     context: android.content.Context,
@@ -648,7 +647,6 @@ data class JugadorPartidoDetalle(
     val titular: Boolean,
     val minutosJugados: Int?
 )
-
 // Minicard horizontal de jugador que muestra el avatar genérico, escudo, nombre
 @Composable
 private fun PlayerMiniCard(
