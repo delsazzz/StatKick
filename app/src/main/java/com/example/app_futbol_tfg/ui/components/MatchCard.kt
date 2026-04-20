@@ -36,14 +36,14 @@ import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
 data class MatchSuggestionUi(
     val id: Int,
     val homeTeam: String,
-    val homeCrest: Int,
+    val homeCrestUrl: String?,
     val result: String,
     val awayTeam: String,
-    val awayCrest: Int,
+    val awayCrestUrl: String?,
     val date: String,
     val season: String,
     val competition: String,
-    val countryFlag: Int
+    val countryFlagUrl: String?
 )
 // Card reutilizable de un partido sugerido.
 //@SuppressLint("NotConstructor")
@@ -92,8 +92,8 @@ fun MatchCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     // Escudo local
-                    Image(
-                        painter = painterResource(id = match.homeCrest),
+                    ApiImage(
+                        url = match.homeCrestUrl,
                         contentDescription = match.homeTeam,
                         modifier = Modifier.size(crestSize),
                         contentScale = ContentScale.Fit
@@ -110,8 +110,8 @@ fun MatchCard(
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     // Escudo visitante
-                    Image(
-                        painter = painterResource(id = match.awayCrest),
+                    ApiImage(
+                        url = match.awayCrestUrl,
                         contentDescription = match.awayTeam,
                         modifier = Modifier.size(crestSize),
                         contentScale = ContentScale.Fit
@@ -161,8 +161,8 @@ fun MatchCard(
                         style = MaterialTheme.typography.bodySmall
                     )
                     Spacer(modifier = Modifier.width(10.dp))
-                    Image(
-                        painter = painterResource(id = match.countryFlag),
+                    ApiImage(
+                        url = match.countryFlagUrl,
                         contentDescription = "País  de la competición",
                         modifier = Modifier.size(18.dp),
                         contentScale = ContentScale.Crop

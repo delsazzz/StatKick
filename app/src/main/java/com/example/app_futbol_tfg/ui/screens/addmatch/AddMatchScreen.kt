@@ -1,6 +1,6 @@
 package com.example.app_futbol_tfg.ui.screens.addmatch
 
-import androidx.compose.foundation.Image
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -48,10 +48,16 @@ import com.example.app_futbol_tfg.ui.ui.theme.BackgroundLight
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
 import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
 import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
-import com.example.app_futbol_tfg.ui.utils.getDrawableId
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.material3.Button
+import androidx.compose.runtime.remember
 import com.example.app_futbol_tfg.ui.components.MatchCard
 import com.example.app_futbol_tfg.ui.components.MatchSuggestionUi
+import androidx.compose.runtime.rememberCoroutineScope
+import com.example.app_futbol_tfg.BuildConfig
+import com.example.app_futbol_tfg.data.repository.ApiFootballRepositoryProvider
+import com.example.app_futbol_tfg.ui.components.ApiImage
+import kotlinx.coroutines.launch
 @Composable
 fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatchDetail: (Int) -> Unit,
                 searchText: String, onSearchTextChange: (String) -> Unit, selectedSuggestionType: String?,
@@ -59,6 +65,10 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                 showSuggestions: Boolean, onShowSuggestionsChange: (Boolean) -> Unit) {
 
     val context = LocalContext.current
+
+    val scope = rememberCoroutineScope()
+    val apiRepo = remember { ApiFootballRepositoryProvider.getInstance(db) }
+
     // Aquí se recuperan los datos necesarios desde Room para construir la búsqueda y lista de partidos
     val partidos by db.partidoDao().getAll().collectAsState(initial = emptyList())
     val equipos by db.equipoDao().getAll().collectAsState(initial = emptyList())
@@ -75,7 +85,7 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
         SearchSuggestionUi.Team(
             id = equipo.id,
             name = equipo.nombre,
-            crestRes = getDrawableId(context, equipo.escudo)
+            crestUrl = equipo.escudo
         )
     }
     val competitionSuggestions = competiciones.map { competicion ->
@@ -83,7 +93,7 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
         SearchSuggestionUi.Competition(
             id = competicion.id,
             name = competicion.nombre,
-            flagRes = getDrawableId(context, pais?.bandera)
+            flagUrl = pais?.bandera
         )
     }
     val selectedSuggestion: SearchSuggestionUi? = when (selectedSuggestionType) {
@@ -101,14 +111,14 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
         MatchSuggestionUi(
             id = partido.id,
             homeTeam = equipoLocal?.nombre ?: "Equipo local",
-            homeCrest = getDrawableId(context, equipoLocal?.escudo),
+            homeCrestUrl = equipoLocal?.escudo,
             result = "${partido.golesLocal} - ${partido.golesVisitante}",
             awayTeam = equipoVisitante?.nombre ?: "Equipo visitante",
-            awayCrest = getDrawableId(context, equipoVisitante?.escudo),
+            awayCrestUrl = equipoVisitante?.escudo,
             date = partido.fecha,
             season = temporada?.temporada ?: "Temporada",
             competition = competicion?.nombre ?: "Competición",
-            countryFlag = getDrawableId(context, pais?.bandera)
+            countryFlagUrl = pais?.bandera
         )
     }
     // Se normaliza el texto introducido en el buscador a minúsculas y sin espacios de más
@@ -186,6 +196,22 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                     .imePadding(),
                 verticalArrangement = Arrangement.spacedBy(sectionSpacing)
             ) {
+                // BOTÓN TEMPORAL DE PRUEBA — eliminar cuando la integración esté verificada
+                Button(
+                    onClick = {
+                        scope.launch {
+                            val ok = apiRepo.fetchAndSaveLeagues(BuildConfig.API_FOOTBALL_KEY)
+                            if (ok) {
+                                Log.d("ApiTest", "Competiciones cargadas correctamente")
+                            } else {
+                                Log.d("ApiTest", "Error al cargar competiciones")
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Cargar competiciones desde API")
+                }
                 // Buscador de equipos y competiciones
                 OutlinedTextField(
                     value = searchText,
@@ -291,16 +317,16 @@ private fun SuggestionsDropdown(suggestions: List<SearchSuggestionUi>, onSuggest
                 ) {
                     when (suggestion) {
                         is SearchSuggestionUi.Team -> {
-                            Image(
-                                painter = painterResource(id = suggestion.crestRes),
+                            ApiImage(
+                                url = suggestion.crestUrl,
                                 contentDescription = suggestion.name,
                                 modifier = Modifier.size(24.dp),
                                 contentScale = ContentScale.Fit
                             )
                         }
                         is SearchSuggestionUi.Competition -> {
-                            Image(
-                                painter = painterResource(id = suggestion.flagRes),
+                            ApiImage(
+                                url = suggestion.flagUrl,
                                 contentDescription = suggestion.name,
                                 modifier = Modifier.size(24.dp),
                                 contentScale = ContentScale.Fit
@@ -327,11 +353,11 @@ sealed class SearchSuggestionUi {
     data class Team(
         val id: Int,
         val name: String,
-        val crestRes: Int
+        val crestUrl: String?
     ) : SearchSuggestionUi()
     data class Competition(
         val id: Int,
         val name: String,
-        val flagRes: Int
+        val flagUrl: String?
     ) : SearchSuggestionUi()
 }

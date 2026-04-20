@@ -49,10 +49,10 @@ import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
 import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
 import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
 import androidx.compose.ui.platform.LocalContext
-import com.example.app_futbol_tfg.ui.utils.getDrawableId
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import com.example.app_futbol_tfg.ui.components.ApiImage
 
 @Composable
 fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
@@ -77,7 +77,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
     val equiposVistosUi = topEquipos.map {
         TeamStatUi(
             name = it.nombre,
-            crestRes = getDrawableId(context, it.escudo),
+            crestUrl = it.escudo,
             matchesCount = it.vecesVisto.toString()
         )
     }
@@ -85,7 +85,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
         PlayerStatUi(
             nombre = it.nombre,
             apellido = it.apellido1 ?: "",
-            crestRes = getDrawableId(context, it.escudo),
+            crestUrl = it.escudo,
             stat = it.total.toString()
         )
     }
@@ -93,7 +93,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
         PlayerStatUi(
             nombre = it.nombre,
             apellido = it.apellido1 ?: "",
-            crestRes = getDrawableId(context, it.escudo),
+            crestUrl = it.escudo,
             stat = it.total.toString()
         )
     }
@@ -101,7 +101,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
         PlayerStatUi(
             nombre = it.nombre,
             apellido = it.apellido1 ?: "",
-            crestRes = getDrawableId(context, it.escudo),
+            crestUrl = it.escudo,
             stat = it.total.toString()
         )
     }
@@ -109,7 +109,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
         PlayerStatUi(
             nombre = it.nombre,
             apellido = it.apellido1 ?: "",
-            crestRes = getDrawableId(context, it.escudo),
+            crestUrl = it.escudo,
             stat = it.total.toString()
         )
     }
@@ -117,7 +117,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
         PlayerStatUi(
             nombre = it.nombre,
             apellido = it.apellido1 ?: "",
-            crestRes = getDrawableId(context, it.escudo),
+            crestUrl = it.escudo,
             stat = it.total.toString()
         )
     }
@@ -346,14 +346,14 @@ private fun StatsSection(
  // Modelo visual de equipos vistos
 data class TeamStatUi(
     val name: String,
-    val crestRes: Int,
+    val crestUrl: String?,
     val matchesCount: String
 )
 // Modelo visual de jugadores
 data class PlayerStatUi(
     val nombre: String,
     val apellido: String,
-    val crestRes: Int,
+    val crestUrl: String?,
     val stat: String
 )
 // Modelo visual de estadios.
@@ -380,8 +380,8 @@ private fun TeamMiniCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Image(
-                painter = painterResource(id = item.crestRes),
+            ApiImage(
+                url = item.crestUrl,
                 contentDescription = item.name,
                 modifier = Modifier.size(crestSize),
                 contentScale = ContentScale.Fit
@@ -450,8 +450,8 @@ private fun PlayerMiniStatCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Image(
-                    painter = painterResource(id = item.crestRes),
+                ApiImage(
+                    url = item.crestUrl,
                     contentDescription = "${item.nombre} ${item.apellido}",
                     modifier = Modifier.size(crestSize),
                     contentScale = ContentScale.Fit

@@ -17,6 +17,8 @@ interface PaisDao {
     suspend fun getById(id: Int): PaisEntity?
     @Query("SELECT * FROM Pais WHERE nombre = :nombre LIMIT 1")
     suspend fun getByNombre(nombre: String): PaisEntity?
+    @Query("SELECT COUNT(*) FROM Pais")
+    suspend fun count(): Int
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(pais: PaisEntity): Long
     @Update

@@ -32,7 +32,8 @@ object DatabaseProvider {
                 .build()
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    SeedData.seed(instance)
+                    // Esto queda comentado porque los datos vienen desde API-Football ahora
+                    // SeedData.seed(instance)
                 } catch (e: SQLiteException) {
                     Log.e(TAG, "Error al ejecutar el seed de la base de datos", e)
                 } catch (e: IllegalStateException) {

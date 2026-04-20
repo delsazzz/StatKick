@@ -40,7 +40,6 @@ import com.example.app_futbol_tfg.ui.ui.theme.BackgroundLight
 import com.example.app_futbol_tfg.ui.ui.theme.CardBackground
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
 import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
-import com.example.app_futbol_tfg.ui.utils.getDrawableId
 
 @Composable
 fun TotalMatchesScreen(userId: Int, db: AppDatabase, onBack: () -> Unit, onOpenMatchDetail: (Int) -> Unit) {
@@ -68,14 +67,14 @@ fun TotalMatchesScreen(userId: Int, db: AppDatabase, onBack: () -> Unit, onOpenM
         MatchSuggestionUi(
             id = partido.id,
             homeTeam = equipoLocal?.nombre ?: "Equipo local",
-            homeCrest = getDrawableId(context, equipoLocal?.escudo),
+            homeCrestUrl = equipoLocal?.escudo,
             result = "${partido.golesLocal} - ${partido.golesVisitante}",
             awayTeam = equipoVisitante?.nombre ?: "Equipo visitante",
-            awayCrest = getDrawableId(context, equipoVisitante?.escudo),
+            awayCrestUrl = equipoVisitante?.escudo,
             date = partido.fecha,
             season = temporada?.temporada ?: "Temporada",
             competition = competicion?.nombre ?: "Competición",
-            countryFlag = getDrawableId(context, pais?.bandera)
+            countryFlagUrl = pais?.bandera
         )
     }
     // Los partidos se agrupan por año a partir de la fecha y se ordenan de más reciente a más antiguo

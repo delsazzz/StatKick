@@ -61,7 +61,6 @@ import com.example.app_futbol_tfg.ui.ui.theme.CardBackground
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
 import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
 import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
-import com.example.app_futbol_tfg.ui.utils.getDrawableId
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
@@ -74,6 +73,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import com.example.app_futbol_tfg.data.entity.PartidoEntity
 import com.example.app_futbol_tfg.data.entity.UsuarioPartidoEntity
+import com.example.app_futbol_tfg.ui.components.ApiImage
 import java.util.Date
 import java.util.Locale
 
@@ -174,14 +174,14 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
     val jugadoresLocales = jugadoresPartido.filter { it.idEquipo == partido.idEquipoLocal }
     val jugadoresVisitantes = jugadoresPartido.filter { it.idEquipo == partido.idEquipoVisitante }
     // Generamos varuables para los escudos
-    val localCrestRes = getDrawableId(context, equipoLocal?.escudo)
-    val visitanteCrestRes = getDrawableId(context, equipoVisitante?.escudo)
+    val localCrestRes = equipoLocal?.escudo
+    val visitanteCrestRes = equipoVisitante?.escudo
     // Mapeamos a PlayerMatchUI los jugadores tanto locales como visitantes
     val localPlayersUi = jugadoresLocales.map { jugador ->
         PlayerMatchUi(
             nombre = jugador.nombre,
             apellido = getApellidoJugador(jugador.apellido1),
-            crestRes = localCrestRes,
+            crestUrl = equipoLocal?.escudo,
             titular = jugador.titular,
             minutosJugados = jugador.minutosJugados
         )
@@ -190,7 +190,7 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
         PlayerMatchUi(
             nombre = jugador.nombre,
             apellido = getApellidoJugador(jugador.apellido1),
-            crestRes = visitanteCrestRes,
+            crestUrl = equipoVisitante?.escudo,
             titular = jugador.titular,
             minutosJugados = jugador.minutosJugados
         )
@@ -262,7 +262,6 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                     }
                 }
                 MatchSummaryCard(
-                    context = context,
                     partido = partido,
                     equipoLocalNombre = equipoLocal?.nombre ?: "Local",
                     equipoVisitanteNombre = equipoVisitante?.nombre ?: "Visitante",
@@ -273,7 +272,6 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                     teamNameSize = teamNameSize
                 )
                 MatchInfoCard(
-                    context = context,
                     fecha = partido.fecha,
                     temporada = temporada?.temporada ?: "Temporada",
                     competicion = competicion?.nombre ?: "Competición",
@@ -439,7 +437,6 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
 }
 @Composable
 private fun MatchSummaryCard(
-    context: android.content.Context,
     partido: PartidoEntity,
     equipoLocalNombre: String,
     equipoVisitanteNombre: String,
@@ -471,8 +468,8 @@ private fun MatchSummaryCard(
                     modifier = Modifier.weight(1f),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Image(
-                        painter = painterResource(id = getDrawableId(context, equipoLocalEscudo)),
+                    ApiImage(
+                        url = equipoLocalEscudo,
                         contentDescription = equipoLocalNombre,
                         modifier = Modifier.size(crestSize),
                         contentScale = ContentScale.Fit
@@ -503,8 +500,8 @@ private fun MatchSummaryCard(
                     modifier = Modifier.weight(1f),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Image(
-                        painter = painterResource(id = getDrawableId(context, equipoVisitanteEscudo)),
+                    ApiImage(
+                        url = equipoVisitanteEscudo,
                         contentDescription = equipoVisitanteNombre,
                         modifier = Modifier.size(crestSize),
                         contentScale = ContentScale.Fit
@@ -528,7 +525,6 @@ private fun MatchSummaryCard(
 }
 @Composable
 private fun MatchInfoCard(
-    context: android.content.Context,
     fecha: String,
     temporada: String,
     competicion: String,
@@ -583,8 +579,8 @@ private fun MatchInfoCard(
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Image(
-                    painter = painterResource(id = getDrawableId(context, banderaCompeticion)),
+                ApiImage(
+                    url = banderaCompeticion,
                     contentDescription = nombrePaisCompeticion,
                     modifier = Modifier.size(18.dp),
                     contentScale = ContentScale.Crop
@@ -631,7 +627,7 @@ private fun MatchInfoCard(
 data class PlayerMatchUi(
     val nombre: String,
     val apellido: String,
-    val crestRes: Int,
+    val crestUrl: String?,
     val titular: Boolean,
     val minutosJugados: Int?
 )
@@ -686,8 +682,8 @@ private fun PlayerMiniCard(
                     )
                 }
                 // Escudo del equipo
-                Image(
-                    painter = painterResource(id = player.crestRes),
+                ApiImage(
+                    url = player.crestUrl,
                     contentDescription = "Escudo equipo jugador",
                     modifier = Modifier.size(22.dp),
                     contentScale = ContentScale.Fit

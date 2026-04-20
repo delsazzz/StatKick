@@ -19,6 +19,12 @@ import com.example.app_futbol_tfg.ui.screens.matchdetail.MatchDetailScreen
 import com.example.app_futbol_tfg.ui.screens.stats.StatsScreen
 import com.example.app_futbol_tfg.ui.screens.totalmatches.TotalMatchesScreen
 import com.example.app_futbol_tfg.ui.ui.theme.App_Futbol_TFGTheme
+import com.example.app_futbol_tfg.BuildConfig
+import com.example.app_futbol_tfg.data.initializeAppData
+import com.example.app_futbol_tfg.data.repository.ApiFootballRepositoryProvider
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 private const val DEMO_USER_ID = 2
 // Definimos las pantallas que vamos a utilizar en la aplicación
@@ -43,6 +49,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         // Aquí obtenemos la instancia de la BBDD para toda la app
         val db = DatabaseProvider.getDatabase(applicationContext)
+        // Lanzamos la carga inicial de datos en segundo plano.
+        // La UI no se bloquea, los datos aparecen conforme se cargan.
+        lifecycleScope.launch(Dispatchers.IO) {
+            val apiRepo = ApiFootballRepositoryProvider.getInstance(db)
+            initializeAppData(apiRepo, BuildConfig.API_FOOTBALL_KEY)
+        }
         enableEdgeToEdge()
         setContent {
             App_Futbol_TFGTheme {
