@@ -50,6 +50,7 @@ import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
 import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.remember
 import com.example.app_futbol_tfg.ui.components.MatchCard
 import com.example.app_futbol_tfg.ui.components.MatchSuggestionUi
@@ -59,6 +60,9 @@ import com.example.app_futbol_tfg.data.repository.ApiFootballRepositoryProvider
 import com.example.app_futbol_tfg.ui.components.ApiImage
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+
 @Composable
 fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatchDetail: (Int) -> Unit,
                 searchText: String, onSearchTextChange: (String) -> Unit, selectedSuggestionType: String?,
@@ -69,6 +73,7 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
 
     val scope = rememberCoroutineScope()
     val apiRepo = remember { ApiFootballRepositoryProvider.getInstance(db) }
+    var isLoadingFromApi by remember { mutableStateOf(false) }
 
     // Aquí se recuperan los datos necesarios desde Room para construir la búsqueda y lista de partidos
     val partidos by db.partidoDao().getAll().collectAsState(initial = emptyList())
@@ -143,33 +148,39 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
         is SearchSuggestionUi.Team -> {
             // Carga bajo demanda de partidos del equipo seleccionado
             LaunchedEffect(suggestion.id) {
+                isLoadingFromApi = true
                 scope.launch {
                     apiRepo.fetchAndSaveFixturesByTeam(
                         apiKey = BuildConfig.API_FOOTBALL_KEY,
                         teamId = suggestion.id,
                         season = 2024
                     )
+                    isLoadingFromApi = false
                 }
             }
             matches.filter { match ->
                 match.homeTeam == suggestion.name || match.awayTeam == suggestion.name
             }
         }
+
         is SearchSuggestionUi.Competition -> {
             // Carga bajo demanda de partidos de la competición seleccionada
             LaunchedEffect(suggestion.id) {
+                isLoadingFromApi = true
                 scope.launch {
                     apiRepo.fetchAndSaveFixturesByLeague(
                         apiKey = BuildConfig.API_FOOTBALL_KEY,
                         leagueId = suggestion.id,
                         season = 2024
                     )
+                    isLoadingFromApi = false
                 }
             }
             matches.filter { match ->
                 match.competition == suggestion.name
             }
         }
+
         null -> {
             if (query.isBlank()) {
                 suggestedMatches
@@ -219,8 +230,6 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                     .imePadding(),
                 verticalArrangement = Arrangement.spacedBy(sectionSpacing)
             ) {
-                    Text("Cargar competiciones desde API")
-                }
                 // Buscador de equipos y competiciones
                 OutlinedTextField(
                     value = searchText,
@@ -272,6 +281,7 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                                     onSelectedSuggestionTypeChange("team")
                                     onSelectedSuggestionIdChange(suggestion.id)
                                 }
+
                                 is SearchSuggestionUi.Competition -> {
                                     onSelectedSuggestionTypeChange("competition")
                                     onSelectedSuggestionIdChange(suggestion.id)
@@ -291,6 +301,25 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                     color = TextPrimary,
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold)
                 )
+                // Indicador de carga mientras se obtienen partidos de la API
+                if (isLoadingFromApi) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = PrimaryBlue
+                        )
+                        Text(
+                            text = "Buscando partidos...",
+                            color = TextSecondary,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
                 filteredMatches.forEach { match ->
                     MatchCard(
                         match = match,
@@ -305,6 +334,7 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
             }
         }
     }
+}
 // Desplegable de sugerencia mostrado bajo el buscador
 @Composable
 private fun SuggestionsDropdown(suggestions: List<SearchSuggestionUi>, onSuggestionSelected: (SearchSuggestionUi) -> Unit) {
