@@ -58,6 +58,7 @@ import com.example.app_futbol_tfg.BuildConfig
 import com.example.app_futbol_tfg.data.repository.ApiFootballRepositoryProvider
 import com.example.app_futbol_tfg.ui.components.ApiImage
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.LaunchedEffect
 @Composable
 fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatchDetail: (Int) -> Unit,
                 searchText: String, onSearchTextChange: (String) -> Unit, selectedSuggestionType: String?,
@@ -136,13 +137,35 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
     val suggestedMatches = matches
         .sortedByDescending { it.date }
         .take(10)
+    // Cuando el usuario selecciona una sugerencia, cargamos los partidos
+// desde la API si no los tenemos ya en Room
     val filteredMatches = when (val suggestion = selectedSuggestion) {
         is SearchSuggestionUi.Team -> {
+            // Carga bajo demanda de partidos del equipo seleccionado
+            LaunchedEffect(suggestion.id) {
+                scope.launch {
+                    apiRepo.fetchAndSaveFixturesByTeam(
+                        apiKey = BuildConfig.API_FOOTBALL_KEY,
+                        teamId = suggestion.id,
+                        season = 2024
+                    )
+                }
+            }
             matches.filter { match ->
                 match.homeTeam == suggestion.name || match.awayTeam == suggestion.name
             }
         }
         is SearchSuggestionUi.Competition -> {
+            // Carga bajo demanda de partidos de la competición seleccionada
+            LaunchedEffect(suggestion.id) {
+                scope.launch {
+                    apiRepo.fetchAndSaveFixturesByLeague(
+                        apiKey = BuildConfig.API_FOOTBALL_KEY,
+                        leagueId = suggestion.id,
+                        season = 2024
+                    )
+                }
+            }
             matches.filter { match ->
                 match.competition == suggestion.name
             }
@@ -196,20 +219,6 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                     .imePadding(),
                 verticalArrangement = Arrangement.spacedBy(sectionSpacing)
             ) {
-                // BOTÓN TEMPORAL DE PRUEBA — eliminar cuando la integración esté verificada
-                Button(
-                    onClick = {
-                        scope.launch {
-                            val ok = apiRepo.fetchAndSaveLeagues(BuildConfig.API_FOOTBALL_KEY)
-                            if (ok) {
-                                Log.d("ApiTest", "Competiciones cargadas correctamente")
-                            } else {
-                                Log.d("ApiTest", "Error al cargar competiciones")
-                            }
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
                     Text("Cargar competiciones desde API")
                 }
                 // Buscador de equipos y competiciones
@@ -296,7 +305,6 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
             }
         }
     }
-}
 // Desplegable de sugerencia mostrado bajo el buscador
 @Composable
 private fun SuggestionsDropdown(suggestions: List<SearchSuggestionUi>, onSuggestionSelected: (SearchSuggestionUi) -> Unit) {

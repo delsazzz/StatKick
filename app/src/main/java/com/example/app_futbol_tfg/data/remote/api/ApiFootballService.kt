@@ -56,4 +56,12 @@ interface ApiFootballService {
         @Header("x-apisports-key") apiKey: String,
         @Query("id") leagueId: Int? = null
     ): Response<LeaguesResponse>
+    // Obtiene partidos filtrados por liga/equipo y temporada
+    @GET("fixtures")
+    suspend fun getFixtures(
+        @Header("x-apisports-key") apiKey: String,
+        @Query("league") leagueId: Int? = null,
+        @Query("team") teamId: Int? = null,
+        @Query("season") season: Int
+    ): Response<FixturesResponse>
 }

@@ -177,4 +177,72 @@ class ApiFootballRepository(
             false
         }
     }
+    // Obtiene los partidos de una liga y temporada desde la API  y los guarda en Room. Solo llama a la API si no hay partidos
+    // de esa liga ya en Room para ahorrar cuota.
+    suspend fun fetchAndSaveFixturesByLeague(
+        apiKey: String,
+        leagueId: Int,
+        season: Int
+    ): Boolean {
+        return try {
+            val existentes = db.partidoDao().countByCompeticion(leagueId)
+            if (existentes > 0) {
+                Log.d(TAG, "Partidos de liga $leagueId ya en Room ($existentes), omitiendo llamada")
+                return true
+            }
+            val response = api.getFixtures(apiKey, leagueId, season)
+            if (response.isSuccessful) {
+                val fixtures = response.body()?.response ?: emptyList()
+                // Solo guardamos partidos finalizados (status FT)
+                val finalizados = fixtures.filter { fixture ->
+                    fixture.fixture.status?.short == "FT"
+                }
+                finalizados.forEach { fixture ->
+                    db.partidoDao().insert(fixture.toPartidoEntity())
+                }
+                Log.d(TAG, "Partidos de liga $leagueId guardados en Room: ${finalizados.size}")
+                true
+            } else {
+                Log.e(TAG, "Error de la API al obtener partidos liga $leagueId: ${response.code()}")
+                false
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Excepción al obtener partidos liga $leagueId", e)
+            false
+        }
+    }
+    // Obtiene los partidos de un equipo concreto desde la API y los guarda en Room. Solo llama a la API si no hay partidos
+    // de ese equipo ya en Room para ahorrar cuota.
+    suspend fun fetchAndSaveFixturesByTeam(
+        apiKey: String,
+        teamId: Int,
+        season: Int
+    ): Boolean {
+        return try {
+            val existentes = db.partidoDao().countByEquipo(teamId)
+            if (existentes > 0) {
+                Log.d(TAG, "Partidos del equipo $teamId ya en Room ($existentes), omitiendo llamada")
+                return true
+            }
+            val response = api.getFixtures(apiKey, teamId = teamId, season = season)
+            if (response.isSuccessful) {
+                val fixtures = response.body()?.response ?: emptyList()
+                // Solo guardamos partidos finalizados
+                val finalizados = fixtures.filter { fixture ->
+                    fixture.fixture.status?.short == "FT"
+                }
+                finalizados.forEach { fixture ->
+                    db.partidoDao().insert(fixture.toPartidoEntity())
+                }
+                Log.d(TAG, "Partidos del equipo $teamId guardados en Room: ${finalizados.size}")
+                true
+            } else {
+                Log.e(TAG, "Error de la API al obtener partidos equipo $teamId: ${response.code()}")
+                false
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Excepción al obtener partidos equipo $teamId", e)
+            false
+        }
+    }
 }

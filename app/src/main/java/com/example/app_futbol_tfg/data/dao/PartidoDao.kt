@@ -23,6 +23,10 @@ interface PartidoDao {
     fun getByCompeticionYTemporada(idCompeticion: Int, idTemporada: Int): Flow<List<PartidoEntity>>
     @Query("""SELECT * FROM Partidos WHERE id_estadio = :idEstadio ORDER BY fecha DESC""")
     fun getByEstadio(idEstadio: Int): Flow<List<PartidoEntity>>
+    @Query("SELECT COUNT(*) FROM Partidos WHERE id_competicion = :idCompeticion")
+    suspend fun countByCompeticion(idCompeticion: Int): Int
+    @Query("SELECT COUNT(*) FROM Partidos WHERE id_equipo_local = :idEquipo OR id_equipo_visitante = :idEquipo")
+    suspend fun countByEquipo(idEquipo: Int): Int
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(partido: PartidoEntity): Long
     @Update
