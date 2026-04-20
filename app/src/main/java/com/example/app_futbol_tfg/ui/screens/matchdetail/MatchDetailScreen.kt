@@ -312,7 +312,6 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                         localPlayersUi.forEach { player ->
                             PlayerMiniCard(
                                 player = player,
-                                width = playerCardWidth,
                                 avatarSize = playerAvatarSize
                             )
                         }
@@ -335,7 +334,6 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                         visitantePlayersUi.forEach { player ->
                             PlayerMiniCard(
                                 player = player,
-                                width = playerCardWidth,
                                 avatarSize = playerAvatarSize
                             )
                         }
@@ -651,7 +649,6 @@ data class JugadorPartidoDetalle(
 @Composable
 private fun PlayerMiniCard(
     player: PlayerMatchUi,
-    width: Dp,
     avatarSize: Dp
 ) {
     Card(
@@ -741,10 +738,13 @@ private fun PlayerMiniCard(
         }
     }
 }
+// Concatena apellido1 y apellido2 si están disponibles.
+// Por ahora los jugadores solo tienen apellido1 en la BBDD, pero la función está preparada para cuando se añada apellido2.
 private fun getApellidoJugador(
-    apellido1: String?
+    apellido1: String?,
+    apellido2: String? = null
 ): String {
-    return listOfNotNull(apellido1).joinToString(" ")
+    return listOfNotNull(apellido1, apellido2).joinToString(" ")
 }
 @Composable
 private fun DotSeparator() {

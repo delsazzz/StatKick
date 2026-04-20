@@ -48,7 +48,7 @@ import com.example.app_futbol_tfg.data.entity.UsuarioPartidoEntity
     ],
     // La versión debe incrementarse cada vez que el esquema de la BBDD cambie
     version = 2,
-    // Este proyecto no expoerta el esquema a ficheros JSON
+    // Este proyecto no exporta el esquema a ficheros JSON
     exportSchema = false
 )
 

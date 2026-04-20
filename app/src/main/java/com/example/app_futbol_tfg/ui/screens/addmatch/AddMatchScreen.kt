@@ -52,13 +52,12 @@ import com.example.app_futbol_tfg.ui.utils.getDrawableId
 import androidx.compose.foundation.layout.imePadding
 import com.example.app_futbol_tfg.ui.components.MatchCard
 import com.example.app_futbol_tfg.ui.components.MatchSuggestionUi
-
 @Composable
 fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatchDetail: (Int) -> Unit,
-                   searchText: String, onSearchTextChange: (String) -> Unit, selectedSuggestionType: String?,
-                   onSelectedSuggestionTypeChange: (String?) -> Unit, selectedSuggestionId: Int?,
-                   onSelectedSuggestionIdChange: (Int?) -> Unit, showSuggestions: Boolean,
-                   onShowSuggestionsChange: (Boolean) -> Unit) {
+                searchText: String, onSearchTextChange: (String) -> Unit, selectedSuggestionType: String?,
+                onSelectedSuggestionTypeChange: (String?) -> Unit, selectedSuggestionId: Int?, onSelectedSuggestionIdChange: (Int?) -> Unit,
+                showSuggestions: Boolean, onShowSuggestionsChange: (Boolean) -> Unit) {
+
     val context = LocalContext.current
     // Aquí se recuperan los datos necesarios desde Room para construir la búsqueda y lista de partidos
     val partidos by db.partidoDao().getAll().collectAsState(initial = emptyList())
@@ -194,7 +193,7 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                         onSearchTextChange(it)
                         onSelectedSuggestionTypeChange(null)
                         onSelectedSuggestionIdChange(null)
-                        onShowSuggestionsChange(it.isNotBlank()) // Muestra el desplegable de sugerencias si hay texto escrito
+                        onShowSuggestionsChange(it.isNotBlank())
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Buscar por equipo o competición") },

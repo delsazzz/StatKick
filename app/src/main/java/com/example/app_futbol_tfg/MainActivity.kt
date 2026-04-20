@@ -73,7 +73,6 @@ class MainActivity : ComponentActivity() {
                 },
                 onOpenTotalMatches = {currentScreen = AppScreen.TotalMatches}
             )
-
             AppScreen.AddMatch -> AddMatchScreen(
                 db = db,
                 onNavigateBottom = { index ->
@@ -99,7 +98,6 @@ class MainActivity : ComponentActivity() {
                 showSuggestions = addMatchShowSuggestions,
                 onShowSuggestionsChange = { addMatchShowSuggestions = it }
             )
-
             AppScreen.Stats -> StatsScreen(
                 userId = DEMO_USER_ID,
                 db = db,
@@ -112,7 +110,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             )
-
             AppScreen.TotalMatches -> TotalMatchesScreen(
                 userId = DEMO_USER_ID,
                 db = db,
@@ -126,7 +123,6 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             )
-
             AppScreen.Map -> MapScreen(
                 onNavigateBottom = { index ->
                     currentScreen = when (index) {
@@ -137,7 +133,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             )
-
             is AppScreen.MatchDetail -> MatchDetailScreen(
                 matchId = screen.matchId,
                 userId = DEMO_USER_ID,
