@@ -71,6 +71,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.room.ColumnInfo
 import com.example.app_futbol_tfg.data.entity.PartidoEntity
 import com.example.app_futbol_tfg.data.entity.UsuarioPartidoEntity
 import com.example.app_futbol_tfg.ui.components.ApiImage
@@ -281,9 +282,13 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                     scoreSize = scoreSize,
                     teamNameSize = teamNameSize
                 )
+                // Formateamos la temporada de "2024" a "2024/2025" sumando 1 al año
+                val temporadaFormateada = temporada?.temporada?.let { anio ->
+                    val anioInt = anio.toIntOrNull()
+                    if (anioInt != null) "$anioInt/${anioInt + 1}" else anio } ?: "Temporada"
                 MatchInfoCard(
                     fecha = partido.fecha,
-                    temporada = temporada?.temporada ?: "Temporada",
+                    temporada = temporadaFormateada,
                     competicion = competicion?.nombre ?: "Competición",
                     banderaCompeticion = paisCompeticion?.bandera,
                     nombrePaisCompeticion = paisCompeticion?.nombre,
@@ -647,9 +652,9 @@ data class JugadorPartidoDetalle(
     val nombre: String,
     val apellido1: String?,
     val apellido2: String? = null,
-    val idEquipo: Int,
+    @ColumnInfo(name = "idEquipo") val idEquipo: Int,
     val titular: Boolean,
-    val minutosJugados: Int?
+    @ColumnInfo(name = "minutos_jugados") val minutosJugados: Int?
 )
 // Minicard horizontal de jugador que muestra el avatar genérico, escudo, nombre
 @Composable

@@ -1,5 +1,6 @@
 package com.example.app_futbol_tfg.data.mapper
 
+import android.util.Log
 import com.example.app_futbol_tfg.data.entity.CompeticionEntity
 import com.example.app_futbol_tfg.data.entity.EquipoEntity
 import com.example.app_futbol_tfg.data.entity.EstadioEntity
@@ -20,7 +21,8 @@ fun LeagueItem.toCompeticionEntity(): CompeticionEntity {
     return CompeticionEntity(
         id = this.league.id,
         nombre = this.league.name ?: "Sin nombre",
-        idPais = null
+        idPais = null,
+        logo = this.league.logo // URL del logo
     )
 }
 
@@ -122,6 +124,7 @@ fun FixturePlayerData.toPartidoJugadorEntity(idPartido: Int, idEquipo: Int): Par
     val games = stats?.games
     val goals = stats?.goals
     val cards = stats?.cards
+    Log.d("MinutosDebug", "Jugador ${playerInfo.name} - minutes: ${games?.minutes} - substitute: ${games?.substitute}")
     return PartidoJugadorEntity(
         id = 0,
         idPartido = idPartido,

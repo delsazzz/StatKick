@@ -15,6 +15,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import com.example.app_futbol_tfg.BuildConfig
+import com.example.app_futbol_tfg.data.entity.TemporadaEntity
 
 private const val TAG = "ApiFootballRepository"
 
@@ -191,7 +192,6 @@ class ApiFootballRepository(
         season: Int
     ): Boolean {
         return try {
-            // Comprobamos si ya hemos consultado específicamente esta liga a la API
             val yaSincronizado = db.apiSyncDao().hasSynced("league", leagueId) > 0
             if (yaSincronizado) {
                 Log.d(TAG, "Partidos de liga $leagueId ya sincronizados, omitiendo llamada")
@@ -202,14 +202,30 @@ class ApiFootballRepository(
                 val fixtures = response.body()?.response ?: emptyList()
                 val finalizados = fixtures.filter { it.fixture.status?.short == "FT" }
                 finalizados.forEach { fixture ->
-                    db.partidoDao().insert(fixture.toPartidoEntity())
+                    try {
+                        // Buscamos o creamos la temporada en Room
+                        val seasonYear = fixture.league.season?.toString() ?: "Desconocida"
+                        var temporada = db.temporadaDao().getByTemporada(seasonYear)
+                        if (temporada == null) {
+                            val newId = db.temporadaDao().insert(
+                                TemporadaEntity(temporada = seasonYear)
+                            )
+                            temporada = TemporadaEntity(id = newId.toInt(), temporada = seasonYear)
+                        }
+                        // Insertamos el partido con la temporada correcta
+                        db.partidoDao().insert(
+                            fixture.toPartidoEntity().copy(idTemporada = temporada.id)
+                        )
+                    } catch (e: android.database.sqlite.SQLiteConstraintException) {
+                        Log.w(TAG, "Partido ${fixture.fixture.id} ignorado por FK inexistente")
+                    }
                 }
                 // Registramos que ya hemos consultado esta liga
                 db.apiSyncDao().markAsSynced(
                     ApiSyncEntity(
                         tipo = "league",
                         idExterno = leagueId,
-                        ultimaSync = SimpleDateFormat("yyyy-mm-dd", Locale.getDefault()).format(Date())
+                        ultimaSync = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
                     )
                 )
                 Log.d(TAG, "Partidos de liga $leagueId guardados en Room: ${finalizados.size}")
@@ -231,7 +247,6 @@ class ApiFootballRepository(
         season: Int
     ): Boolean {
         return try {
-            // Comprobamos si ya hemos consultado específicamente este equipo a la API
             val yaSincronizado = db.apiSyncDao().hasSynced("team", teamId) > 0
             if (yaSincronizado) {
                 Log.d(TAG, "Partidos del equipo $teamId ya sincronizados, omitiendo llamada")
@@ -243,29 +258,31 @@ class ApiFootballRepository(
                 val finalizados = fixtures.filter { it.fixture.status?.short == "FT" }
                 finalizados.forEach { fixture ->
                     try {
-                        db.partidoDao().insert(fixture.toPartidoEntity())
+                        // Buscamos o creamos la temporada en Room
+                        val seasonYear = fixture.league.season?.toString() ?: "Desconocida"
+                        var temporada = db.temporadaDao().getByTemporada(seasonYear)
+                        if (temporada == null) {
+                            val newId = db.temporadaDao().insert(
+                                TemporadaEntity(temporada = seasonYear)
+                            )
+                            temporada = TemporadaEntity(id = newId.toInt(), temporada = seasonYear)
+                        }
+                        // Insertamos el partido con la temporada correcta
+                        db.partidoDao().insert(
+                            fixture.toPartidoEntity().copy(idTemporada = temporada.id)
+                        )
                     } catch (e: android.database.sqlite.SQLiteConstraintException) {
-                        Log.w(TAG, """
-            Partido ${fixture.fixture.id} ignorado por FK inexistente:
-            - Equipo local: ${fixture.teams.home.id} (${fixture.teams.home.name})
-            - Equipo visitante: ${fixture.teams.away.id} (${fixture.teams.away.name})
-            - Competición: ${fixture.league.id} (${fixture.league.name})
-            - Estadio: ${fixture.fixture.venue?.id} (${fixture.fixture.venue?.name})
-        """.trimIndent())
+                        Log.w(TAG, "Partido ${fixture.fixture.id} ignorado por FK inexistente")
                     }
-                }
-                /*val finalizados = fixtures.filter { it.fixture.status.short == "FT" }
-                finalizados.forEach { fixture ->
-                    db.partidoDao().insert(fixture.toPartidoEntity())
                 }
                 // Registramos que ya hemos consultado este equipo
                 db.apiSyncDao().markAsSynced(
                     ApiSyncEntity(
                         tipo = "team",
                         idExterno = teamId,
-                        ultimaSync = SimpleDateFormat("yyyy-mm-dd", Locale.getDefault()).format(Date())
+                        ultimaSync = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
                     )
-                )*/
+                )
                 Log.d(TAG, "Partidos del equipo $teamId guardados en Room: ${finalizados.size}")
                 true
             } else {
@@ -277,9 +294,7 @@ class ApiFootballRepository(
             false
         }
     }
-    // Obtiene los jugadores y sus estadísticas de un partido concreto
-// y los guarda en Room. Solo llama a la API si no hay jugadores
-// de ese partido ya en Room.
+
     suspend fun fetchAndSaveFixturePlayers(
         apiKey: String,
         fixtureId: Int
@@ -295,29 +310,21 @@ class ApiFootballRepository(
                 val equipos = response.body()?.response ?: emptyList()
                 equipos.forEach { equipoData ->
                     val idEquipo = equipoData.team.id
-                    Log.d(TAG, "Procesando equipo $idEquipo con ${equipoData.players.size} jugadores")
                     equipoData.players.forEach { playerData ->
-                        Log.d(TAG, """
-    PlayerData raw:
-    - player id: ${playerData.player?.id}
-    - player name: ${playerData.player?.name}
-    - statistics size: ${playerData.statistics.size}
-""".trimIndent())
                         try {
                             val jugador = playerData.toJugadorEntity(idEquipo)
                             val partidoJugador = playerData.toPartidoJugadorEntity(fixtureId, idEquipo)
-                            if (jugador == null) {
-                                Log.w(TAG, "Jugador ignorado por datos incompletos")
+                            if (jugador == null || partidoJugador == null) {
                                 return@forEach
                             }
-                            if (partidoJugador == null) {
-                                Log.w(TAG, "PartidoJugador ignorado por datos incompletos")
+                            // Solo insertamos jugadores que hayan jugado minutos
+                            // Los convocados que no jugaron tienen minutes == null
+                            val minutos = partidoJugador.minutosJugados ?: 0
+                            if (minutos == 0) {
                                 return@forEach
                             }
-                            val jugadorId = db.jugadorDao().insert(jugador)
-                            Log.d(TAG, "Jugador insertado con id: $jugadorId")
-                            val pjId = db.partidoJugadorDao().insert(partidoJugador)
-                            Log.d(TAG, "PartidoJugador insertado con id: $pjId")
+                            db.jugadorDao().insert(jugador)
+                            db.partidoJugadorDao().insert(partidoJugador)
                         } catch (e: android.database.sqlite.SQLiteConstraintException) {
                             Log.w(TAG, "Jugador ${playerData.player?.id} ignorado por FK: ${e.message}")
                         }
@@ -327,10 +334,7 @@ class ApiFootballRepository(
                     ApiSyncEntity(
                         tipo = "fixture",
                         idExterno = fixtureId,
-                        ultimaSync = java.text.SimpleDateFormat(
-                            "yyyy-MM-dd",
-                            java.util.Locale.getDefault()
-                        ).format(java.util.Date())
+                        ultimaSync = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
                     )
                 )
                 Log.d(TAG, "Jugadores del partido $fixtureId guardados en Room")

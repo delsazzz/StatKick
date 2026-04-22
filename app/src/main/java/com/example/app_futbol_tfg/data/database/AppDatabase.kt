@@ -50,7 +50,7 @@ import com.example.app_futbol_tfg.data.entity.UsuarioPartidoEntity
         ApiSyncEntity::class
     ],
     // La versión debe incrementarse cada vez que el esquema de la BBDD cambie
-    version = 3,
+    version = 4,
     // Este proyecto no exporta el esquema a ficheros JSON
     exportSchema = false
 )

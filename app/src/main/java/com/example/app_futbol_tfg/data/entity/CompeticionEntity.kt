@@ -25,6 +25,7 @@ data class CompeticionEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val nombre: String,
-    @ColumnInfo(name = "id_pais") 
-    val idPais: Int? // El ? define que esa variable o campo puede ser NULLABLE
+    @ColumnInfo(name = "id_pais")
+    val idPais: Int?,
+    val logo: String? = null // URL del logo desde la API
 )
