@@ -9,10 +9,6 @@ private const val TAG = "AppInitializer"
 // IDs de las competiciones que queremos cargar en la app
 val LIGAS_SELECCIONADAS = listOf(
     2,   // Champions League
-    39,  // Premier League
-    61,  // Ligue 1
-    78,  // Bundesliga
-    135, // Serie A
     140  // La Liga
 )
 

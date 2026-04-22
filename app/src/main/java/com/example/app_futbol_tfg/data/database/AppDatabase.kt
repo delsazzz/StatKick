@@ -2,6 +2,7 @@ package com.example.app_futbol_tfg.data.database
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import com.example.app_futbol_tfg.data.dao.ApiSyncDao
 import com.example.app_futbol_tfg.data.dao.CompeticionDao
 import com.example.app_futbol_tfg.data.dao.EquipoDao
 import com.example.app_futbol_tfg.data.dao.EstadioDao
@@ -14,6 +15,7 @@ import com.example.app_futbol_tfg.data.dao.PartidoJugadorDao
 import com.example.app_futbol_tfg.data.dao.TemporadaDao
 import com.example.app_futbol_tfg.data.dao.UsuarioDao
 import com.example.app_futbol_tfg.data.dao.UsuarioPartidoDao
+import com.example.app_futbol_tfg.data.entity.ApiSyncEntity
 import com.example.app_futbol_tfg.data.entity.CompeticionEntity
 import com.example.app_futbol_tfg.data.entity.EquipoEntity
 import com.example.app_futbol_tfg.data.entity.EstadioEntity
@@ -44,10 +46,11 @@ import com.example.app_futbol_tfg.data.entity.UsuarioPartidoEntity
         TemporadaEntity::class,
         UsuarioEntity::class,
         UsuarioLogroEntity::class,
-        UsuarioPartidoEntity::class
+        UsuarioPartidoEntity::class,
+        ApiSyncEntity::class
     ],
     // La versión debe incrementarse cada vez que el esquema de la BBDD cambie
-    version = 2,
+    version = 3,
     // Este proyecto no exporta el esquema a ficheros JSON
     exportSchema = false
 )
@@ -67,4 +70,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun temporadaDao(): TemporadaDao
     abstract fun usuarioDao(): UsuarioDao
     abstract fun usuarioPartidoDao(): UsuarioPartidoDao
+    abstract fun apiSyncDao(): ApiSyncDao
 }

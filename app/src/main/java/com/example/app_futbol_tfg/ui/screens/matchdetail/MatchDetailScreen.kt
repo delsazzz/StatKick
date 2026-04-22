@@ -76,13 +76,15 @@ import com.example.app_futbol_tfg.data.entity.UsuarioPartidoEntity
 import com.example.app_futbol_tfg.ui.components.ApiImage
 import java.util.Date
 import java.util.Locale
+import com.example.app_futbol_tfg.BuildConfig
+import com.example.app_futbol_tfg.data.repository.ApiFootballRepositoryProvider
 
 private const val TAG = "MatchDetailScreen"
 @Composable
 fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> Unit) {
-    val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val apiRepo = remember { ApiFootballRepositoryProvider.getInstance(db) }
     var menuExpanded by remember { mutableStateOf(false) }
     var showRemoveDialog by remember { mutableStateOf(false) }
     // Se hace la llamada con el matchId y se guarda el resultado en partido
@@ -165,6 +167,14 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
         }
     }
     var alreadyAdded by remember { mutableStateOf(false) }
+    // Al abrir el detalle del partido cargamos los jugadores desde la API
+    // si no están ya en Room para ese partido concreto
+    LaunchedEffect(matchId) {
+        apiRepo.fetchAndSaveFixturePlayers(
+            apiKey = BuildConfig.API_FOOTBALL_KEY,
+            fixtureId = matchId
+        )
+    }
     LaunchedEffect(alreadyAddedState.value) {
         alreadyAdded = alreadyAddedState.value
     }

@@ -7,6 +7,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import android.util.Log
+import com.example.app_futbol_tfg.data.entity.UsuarioEntity
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 // Este es el proveedor único de la BBDD
 // Se aplica el patrón Singleton para garantizar una sola instancia de Room
@@ -33,7 +37,33 @@ object DatabaseProvider {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     // Esto queda comentado porque los datos vienen desde API-Football ahora
-                    // SeedData.seed(instance)
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            // Insertamos el usuario de demo si no existe
+                            val usuarioExistente = instance.usuarioDao().getById(2)
+                            if (usuarioExistente == null) {
+                                instance.usuarioDao().insert(
+                                    UsuarioEntity(
+                                        id = 2,
+                                        nombreUsuario = "demo",
+                                        email = "demo@tfg.com",
+                                        passwordHash = "demo",
+                                        fechaRegistro = SimpleDateFormat(
+                                            "yyyy-MM-dd",
+                                            Locale.getDefault()
+                                        ).format(Date())
+                                    )
+                                )
+                            }
+                            // SeedData.seed(instance)
+                            // Seed desactivado — los datos se cargan desde API-Football
+                        } catch (e: SQLiteException) {
+                            Log.e(TAG, "Error al ejecutar el seed de la base de datos", e)
+                        } catch (e: IllegalStateException) {
+                            Log.e(TAG, "Estado inválido durante el seed de la base de datos", e)
+                        }
+                    }
+                // SeedData.seed(instance)
                 } catch (e: SQLiteException) {
                     Log.e(TAG, "Error al ejecutar el seed de la base de datos", e)
                 } catch (e: IllegalStateException) {

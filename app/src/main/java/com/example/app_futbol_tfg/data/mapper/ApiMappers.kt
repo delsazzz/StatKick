@@ -11,6 +11,9 @@ import com.example.app_futbol_tfg.data.remote.model.FixtureItem
 import com.example.app_futbol_tfg.data.remote.model.LeagueItem
 import com.example.app_futbol_tfg.data.remote.model.PlayerItem
 import com.example.app_futbol_tfg.data.remote.model.TeamItem
+import com.example.app_futbol_tfg.data.entity.PartidoJugadorEntity
+import com.example.app_futbol_tfg.data.remote.model.FixturePlayerData
+import com.example.app_futbol_tfg.data.remote.model.FixturePlayersTeam
 
 // Convierte una respuesta de liga de la API a una entidad de Room
 fun LeagueItem.toCompeticionEntity(): CompeticionEntity {
@@ -92,5 +95,43 @@ fun CountryItem.toPaisEntity(): PaisEntity {
         id = 0, // autoGenerate, Room asigna el id
         nombre = this.name ?: "Sin nombre",
         bandera = this.flag // URL tipo https://media.api-sports.io/flags/es.svg
+    )
+}
+fun FixturePlayerData.toJugadorEntity(idEquipo: Int): JugadorEntity? {
+    val playerInfo = this.player ?: return null
+    val playerId = playerInfo.id ?: return null
+    val partes = playerInfo.name?.split(" ") ?: emptyList()
+    return JugadorEntity(
+        id = playerId,
+        nombre = partes.firstOrNull() ?: "Sin nombre",
+        apellido1 = partes.drop(1).joinToString(" ").ifBlank { null },
+        apellido2 = null,
+        fechaNacimiento = null,
+        idLocalidad = null,
+        idPais = null,
+        idEquipoActual = idEquipo,
+        posicion = null,
+        activo = true
+    )
+}
+
+fun FixturePlayerData.toPartidoJugadorEntity(idPartido: Int, idEquipo: Int): PartidoJugadorEntity? {
+    val playerInfo = this.player ?: return null
+    val playerId = playerInfo.id ?: return null
+    val stats = this.statistics.firstOrNull()
+    val games = stats?.games
+    val goals = stats?.goals
+    val cards = stats?.cards
+    return PartidoJugadorEntity(
+        id = 0,
+        idPartido = idPartido,
+        idJugador = playerId,
+        idEquipo = idEquipo,
+        titular = games?.substitute == false,
+        minutosJugados = games?.minutes,
+        goles = goals?.total ?: 0,
+        asistencias = goals?.assists ?: 0,
+        amarillas = cards?.yellow ?: 0,
+        rojas = cards?.red ?: 0
     )
 }

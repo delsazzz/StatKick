@@ -1,6 +1,7 @@
 package com.example.app_futbol_tfg.data.remote.api
 
 import com.example.app_futbol_tfg.data.remote.model.CountriesResponse
+import com.example.app_futbol_tfg.data.remote.model.FixturePlayersResponse
 import com.example.app_futbol_tfg.data.remote.model.FixturesResponse
 import com.example.app_futbol_tfg.data.remote.model.LeaguesResponse
 import com.example.app_futbol_tfg.data.remote.model.TeamsResponse
@@ -64,4 +65,10 @@ interface ApiFootballService {
         @Query("team") teamId: Int? = null,
         @Query("season") season: Int
     ): Response<FixturesResponse>
+    // Obtiene las estadísticas de los jugadores de un partido concreto
+    @GET("fixtures/players")
+    suspend fun getFixturePlayers(
+        @Header("x-apisports-key") apiKey: String,
+        @Query("fixture") fixtureId: Int
+    ): Response<FixturePlayersResponse>
 }

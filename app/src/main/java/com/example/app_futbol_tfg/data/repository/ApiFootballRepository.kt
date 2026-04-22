@@ -2,13 +2,19 @@ package com.example.app_futbol_tfg.data.repository
 
 import android.util.Log
 import com.example.app_futbol_tfg.data.database.AppDatabase
+import com.example.app_futbol_tfg.data.entity.ApiSyncEntity
 import com.example.app_futbol_tfg.data.mapper.toCompeticionEntity
 import com.example.app_futbol_tfg.data.mapper.toEquipoEntity
 import com.example.app_futbol_tfg.data.mapper.toEstadioEntity
 import com.example.app_futbol_tfg.data.mapper.toJugadorEntity
 import com.example.app_futbol_tfg.data.mapper.toPaisEntity
 import com.example.app_futbol_tfg.data.mapper.toPartidoEntity
+import com.example.app_futbol_tfg.data.mapper.toPartidoJugadorEntity
 import com.example.app_futbol_tfg.data.remote.api.ApiFootballService
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import com.example.app_futbol_tfg.BuildConfig
 
 private const val TAG = "ApiFootballRepository"
 
@@ -185,21 +191,27 @@ class ApiFootballRepository(
         season: Int
     ): Boolean {
         return try {
-            val existentes = db.partidoDao().countByCompeticion(leagueId)
-            if (existentes > 0) {
-                Log.d(TAG, "Partidos de liga $leagueId ya en Room ($existentes), omitiendo llamada")
+            // Comprobamos si ya hemos consultado específicamente esta liga a la API
+            val yaSincronizado = db.apiSyncDao().hasSynced("league", leagueId) > 0
+            if (yaSincronizado) {
+                Log.d(TAG, "Partidos de liga $leagueId ya sincronizados, omitiendo llamada")
                 return true
             }
-            val response = api.getFixtures(apiKey, leagueId, season)
+            val response = api.getFixtures(apiKey, leagueId = leagueId, season = season)
             if (response.isSuccessful) {
                 val fixtures = response.body()?.response ?: emptyList()
-                // Solo guardamos partidos finalizados (status FT)
-                val finalizados = fixtures.filter { fixture ->
-                    fixture.fixture.status?.short == "FT"
-                }
+                val finalizados = fixtures.filter { it.fixture.status?.short == "FT" }
                 finalizados.forEach { fixture ->
                     db.partidoDao().insert(fixture.toPartidoEntity())
                 }
+                // Registramos que ya hemos consultado esta liga
+                db.apiSyncDao().markAsSynced(
+                    ApiSyncEntity(
+                        tipo = "league",
+                        idExterno = leagueId,
+                        ultimaSync = SimpleDateFormat("yyyy-mm-dd", Locale.getDefault()).format(Date())
+                    )
+                )
                 Log.d(TAG, "Partidos de liga $leagueId guardados en Room: ${finalizados.size}")
                 true
             } else {
@@ -219,21 +231,41 @@ class ApiFootballRepository(
         season: Int
     ): Boolean {
         return try {
-            val existentes = db.partidoDao().countByEquipo(teamId)
-            if (existentes > 0) {
-                Log.d(TAG, "Partidos del equipo $teamId ya en Room ($existentes), omitiendo llamada")
+            // Comprobamos si ya hemos consultado específicamente este equipo a la API
+            val yaSincronizado = db.apiSyncDao().hasSynced("team", teamId) > 0
+            if (yaSincronizado) {
+                Log.d(TAG, "Partidos del equipo $teamId ya sincronizados, omitiendo llamada")
                 return true
             }
             val response = api.getFixtures(apiKey, teamId = teamId, season = season)
             if (response.isSuccessful) {
                 val fixtures = response.body()?.response ?: emptyList()
-                // Solo guardamos partidos finalizados
-                val finalizados = fixtures.filter { fixture ->
-                    fixture.fixture.status?.short == "FT"
+                val finalizados = fixtures.filter { it.fixture.status?.short == "FT" }
+                finalizados.forEach { fixture ->
+                    try {
+                        db.partidoDao().insert(fixture.toPartidoEntity())
+                    } catch (e: android.database.sqlite.SQLiteConstraintException) {
+                        Log.w(TAG, """
+            Partido ${fixture.fixture.id} ignorado por FK inexistente:
+            - Equipo local: ${fixture.teams.home.id} (${fixture.teams.home.name})
+            - Equipo visitante: ${fixture.teams.away.id} (${fixture.teams.away.name})
+            - Competición: ${fixture.league.id} (${fixture.league.name})
+            - Estadio: ${fixture.fixture.venue?.id} (${fixture.fixture.venue?.name})
+        """.trimIndent())
+                    }
                 }
+                /*val finalizados = fixtures.filter { it.fixture.status.short == "FT" }
                 finalizados.forEach { fixture ->
                     db.partidoDao().insert(fixture.toPartidoEntity())
                 }
+                // Registramos que ya hemos consultado este equipo
+                db.apiSyncDao().markAsSynced(
+                    ApiSyncEntity(
+                        tipo = "team",
+                        idExterno = teamId,
+                        ultimaSync = SimpleDateFormat("yyyy-mm-dd", Locale.getDefault()).format(Date())
+                    )
+                )*/
                 Log.d(TAG, "Partidos del equipo $teamId guardados en Room: ${finalizados.size}")
                 true
             } else {
@@ -242,6 +274,73 @@ class ApiFootballRepository(
             }
         } catch (e: Exception) {
             Log.e(TAG, "Excepción al obtener partidos equipo $teamId", e)
+            false
+        }
+    }
+    // Obtiene los jugadores y sus estadísticas de un partido concreto
+// y los guarda en Room. Solo llama a la API si no hay jugadores
+// de ese partido ya en Room.
+    suspend fun fetchAndSaveFixturePlayers(
+        apiKey: String,
+        fixtureId: Int
+    ): Boolean {
+        return try {
+            val yaSincronizado = db.apiSyncDao().hasSynced("fixture", fixtureId) > 0
+            if (yaSincronizado) {
+                Log.d(TAG, "Jugadores del partido $fixtureId ya sincronizados, omitiendo llamada")
+                return true
+            }
+            val response = api.getFixturePlayers(BuildConfig.API_FOOTBALL_KEY, fixtureId)
+            if (response.isSuccessful) {
+                val equipos = response.body()?.response ?: emptyList()
+                equipos.forEach { equipoData ->
+                    val idEquipo = equipoData.team.id
+                    Log.d(TAG, "Procesando equipo $idEquipo con ${equipoData.players.size} jugadores")
+                    equipoData.players.forEach { playerData ->
+                        Log.d(TAG, """
+    PlayerData raw:
+    - player id: ${playerData.player?.id}
+    - player name: ${playerData.player?.name}
+    - statistics size: ${playerData.statistics.size}
+""".trimIndent())
+                        try {
+                            val jugador = playerData.toJugadorEntity(idEquipo)
+                            val partidoJugador = playerData.toPartidoJugadorEntity(fixtureId, idEquipo)
+                            if (jugador == null) {
+                                Log.w(TAG, "Jugador ignorado por datos incompletos")
+                                return@forEach
+                            }
+                            if (partidoJugador == null) {
+                                Log.w(TAG, "PartidoJugador ignorado por datos incompletos")
+                                return@forEach
+                            }
+                            val jugadorId = db.jugadorDao().insert(jugador)
+                            Log.d(TAG, "Jugador insertado con id: $jugadorId")
+                            val pjId = db.partidoJugadorDao().insert(partidoJugador)
+                            Log.d(TAG, "PartidoJugador insertado con id: $pjId")
+                        } catch (e: android.database.sqlite.SQLiteConstraintException) {
+                            Log.w(TAG, "Jugador ${playerData.player?.id} ignorado por FK: ${e.message}")
+                        }
+                    }
+                }
+                db.apiSyncDao().markAsSynced(
+                    ApiSyncEntity(
+                        tipo = "fixture",
+                        idExterno = fixtureId,
+                        ultimaSync = java.text.SimpleDateFormat(
+                            "yyyy-MM-dd",
+                            java.util.Locale.getDefault()
+                        ).format(java.util.Date())
+                    )
+                )
+                Log.d(TAG, "Jugadores del partido $fixtureId guardados en Room")
+                true
+            } else {
+                Log.e(TAG, "Error de la API al obtener jugadores partido $fixtureId: ${response.code()}")
+                false
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Excepción al obtener jugadores partido $fixtureId", e)
             false
         }
     }

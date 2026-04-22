@@ -63,12 +63,12 @@ data class FixturePlayers(
 )
 // Información de cada jugador en el partido
 data class FixturePlayerInfo(
-    @SerializedName("player") val player: PlayerShortInfo,
+    @SerializedName("player") val player: PlayerShortInfo?,
     @SerializedName("statistics") val statistics: List<PlayerStatistics>
 )
 // Identificador y nombre del jugador
 data class PlayerShortInfo(
-    @SerializedName("id") val id: Int,
+    @SerializedName("id") val id: Int?,
     @SerializedName("name") val name: String?
 )
 // Estadísticas del jugador en el partido
