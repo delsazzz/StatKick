@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -47,6 +48,9 @@ import com.example.app_futbol_tfg.ui.ui.theme.CardBackground
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
 import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
 import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.layout.ContentScale
+import com.example.app_futbol_tfg.ui.components.ApiImage
 
 @Composable
 fun HomeScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit,onOpenTotalMatches: () -> Unit) {
@@ -75,6 +79,7 @@ fun HomeScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit,onO
 
     val mostViewedTeam = teamCounter.maxByOrNull { it.value }?.key
     val mostViewedTeamName = mostViewedTeam?.let { equiposMap[it]?.nombre } ?: "-"
+    val mostViewedTeamCrest = mostViewedTeam?.let { equiposMap[it]?.escudo }
 
     val matchIds = partidosVistos.map { it.id }
 
@@ -94,7 +99,13 @@ fun HomeScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit,onO
     val mostViewedPlayer = playerCounter.maxByOrNull { it.value }?.key
 
     val mostViewedPlayerName =
-        mostViewedPlayer?.let { jugadoresMap[it]?.nombre } ?: "-"
+        mostViewedPlayer?.let { id ->
+            val jugador = jugadoresMap[id]
+            // joinToString ignora los nulls automáticamente
+            // si apellido1 es null, solo muestra el nombre sin espacio raro
+            listOfNotNull(jugador?.nombre, jugador?.apellido1)
+                .joinToString(" ")
+        } ?: "-"
 
     Scaffold(
         // Barra superior reutilizable
@@ -221,17 +232,20 @@ fun HomeScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit,onO
                     // Segunda fila
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.Top
                     ) {
                         StatCard(
                             modifier = Modifier.weight(1f),
                             title = "Equipo más visto",
-                            value = mostViewedTeamName
+                            value = mostViewedTeamName,
+                            imageUrl = mostViewedTeamCrest
                         )
                         StatCard(
                             modifier = Modifier.weight(1f),
                             title = "Jugador más visto",
-                            value = mostViewedPlayerName
+                            value = mostViewedPlayerName,
+                            imageUrl = mostViewedTeamCrest
                         )
                     }
                     // Si queremos añadir más estadísticas se pueden añadir más
@@ -276,23 +290,26 @@ private fun StatCard(
     modifier: Modifier = Modifier,
     title: String,
     value: String,
+    imageUrl: String? = null,
     onClick: (() -> Unit)? = null
 ) {
     Card(
         modifier = if (onClick != null) {
-            modifier.clickable { onClick() }
-        } else {
             modifier
+                .wrapContentHeight()
+                .clickable { onClick() }
+        } else {
+            modifier.wrapContentHeight()
         },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = CardBackground
-        ),
+            containerColor = CardBackground),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .wrapContentHeight()
                 .padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -301,13 +318,31 @@ private fun StatCard(
                 color = TextSecondary,
                 style = MaterialTheme.typography.bodyMedium
             )
-            Text(
-                text = value,
-                color = TextPrimary,
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold
-                )
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+               if (imageUrl != null) {
+                   ApiImage(
+                       url = imageUrl,
+                       contentDescription = value,
+                       modifier = Modifier.size(24.dp),
+                       contentScale = ContentScale.Fit
+                   )
+               }
+               Text(
+                   text = value,
+                   color = TextPrimary,
+                   maxLines = 2,
+                   overflow = TextOverflow.Ellipsis,
+                   softWrap = true,
+                   modifier = Modifier.weight(1f),
+                   style = MaterialTheme.typography.bodyLarge.copy(
+                       fontWeight = FontWeight.Bold,
+                       fontSize = 14.sp
+                   )
+               )
+            }
         }
     }
 }

@@ -166,7 +166,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
             ) {
                 StatsSection(
                     title = "Partidos y equipos vistos",
-                    totalLabel = "Partidos vistos",
+                    totalLabel = "Total de partidos vistos",
                     totalValue = totalPartidos.toString(),
                     totalSize = totalSize,
                     subtitleSize = subtitleSize
@@ -181,7 +181,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
                 }
                 StatsSection(
                     title = "Jugadores más vistos",
-                    totalLabel = "Jugadores vistos",
+                    totalLabel = "Total de jugadores vistos",
                     totalValue = totalJugadoresDistintos.toString(),
                     totalSize = totalSize,
                     subtitleSize = subtitleSize
@@ -197,7 +197,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
                 }
                 StatsSection(
                     title = "Goleadores vistos",
-                    totalLabel = "Goles vistos",
+                    totalLabel = "Total de goles vistos",
                     totalValue = totalGolesVistos.toString(),
                     totalSize = totalSize,
                     subtitleSize = subtitleSize
@@ -213,7 +213,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
                 }
                 StatsSection(
                     title = "Asistencias vistas",
-                    totalLabel = "Asistencias",
+                    totalLabel = "Total de asistencias vistas",
                     totalValue = totalAsistenciasVistas.toString(),
                     totalSize = totalSize,
                     subtitleSize = subtitleSize
@@ -229,7 +229,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
                 }
                 StatsSection(
                     title = "Jugadores con más amarillas",
-                    totalLabel = "Amarillas vistas",
+                    totalLabel = "Total de amarillas vistas",
                     totalValue = totalAmarillasVistas.toString(),
                     totalSize = totalSize,
                     subtitleSize = subtitleSize
@@ -245,7 +245,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
                 }
                 StatsSection(
                     title = "Jugadores con más rojas",
-                    totalLabel = "Rojas vistas",
+                    totalLabel = "Total de rojas vistas",
                     totalValue = totalRojasVistas.toString(),
                     totalSize = totalSize,
                     subtitleSize = subtitleSize
@@ -261,7 +261,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
                 }
                 StatsSection(
                     title = "Estadios vistos",
-                    totalLabel = "Estadios",
+                    totalLabel = "Total de estadios vistos",
                     totalValue = totalEstadiosDistintos.toString(),
                     totalSize = totalSize,
                     subtitleSize = subtitleSize
