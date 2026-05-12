@@ -53,9 +53,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import com.example.app_futbol_tfg.ui.components.ApiImage
+import com.example.app_futbol_tfg.ui.ui.theme.LocalAppColors
 
 @Composable
 fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
+    val appColors = LocalAppColors.current
     val totalPartidos by db.usuarioPartidoDao().countByUsuarioFlow(userId).collectAsState(initial = 0)
     val topEquipos by db.usuarioPartidoDao().getTopEquiposVistos(userId).collectAsState(initial = emptyList())
     val totalEquiposDistintos by db.usuarioPartidoDao().countEquiposDistintosVistos(userId).collectAsState(initial = 0)
@@ -139,13 +141,13 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
                 onItemSelected = onNavigateBottom
             )
         },
-        containerColor = BackgroundLight
+        containerColor = appColors.background
     ) { innerPadding ->
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(BackgroundLight)
+                .background(appColors.background)
                 .safeDrawingPadding()
         ) {
             val isSmallScreen = maxWidth < 360.dp || maxHeight < 700.dp
@@ -289,38 +291,28 @@ private fun StatsSection(
     subtitleSize: androidx.compose.ui.unit.TextUnit,
     content: @Composable () -> Unit
 ) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    val appColors = LocalAppColors.current
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
             text = title,
-            color = TextPrimary,
-            style = MaterialTheme.typography.titleLarge.copy(
-                fontWeight = FontWeight.SemiBold
-            )
+            color = appColors.textPrimary,
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold)
         )
-
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(containerColor = CardBackground),
+            colors = CardDefaults.cardColors(containerColor = appColors.card),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(18.dp),
+                modifier = Modifier.fillMaxWidth().padding(18.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         text = totalLabel,
-                        color = TextSecondary,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontSize = subtitleSize
-                        )
+                        color = appColors.textSecondary,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = subtitleSize)
                     )
                     Text(
                         text = totalValue,
@@ -332,9 +324,7 @@ private fun StatsSection(
                     )
                 }
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     content()
@@ -368,11 +358,13 @@ private fun TeamMiniCard(
     cardWidth: Dp,
     crestSize: Dp
 ) {
+    val appColors = LocalAppColors.current
     Card(
         modifier = Modifier.width(cardWidth),
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = BackgroundLight)
+        colors = CardDefaults.cardColors(containerColor = appColors.background)
     ) {
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -420,10 +412,11 @@ private fun PlayerMiniStatCard(
     avatarSize: Dp,
     crestSize: Dp
 ) {
+    val appColors = LocalAppColors.current
     Card(
         modifier = Modifier.width(cardWidth),
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = BackgroundLight)
+        colors = CardDefaults.cardColors(containerColor = appColors.background)
     ) {
         Column(
             modifier = Modifier
@@ -500,11 +493,12 @@ private fun StadiumMiniCard(
     item: StadiumStatUi,
     cardWidth: androidx.compose.ui.unit.Dp
 ) {
+    val appColors = LocalAppColors.current
     Card(
         modifier = Modifier.width(cardWidth),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
-            containerColor = BackgroundLight
+            containerColor = appColors.background
         )
     ) {
         Column(

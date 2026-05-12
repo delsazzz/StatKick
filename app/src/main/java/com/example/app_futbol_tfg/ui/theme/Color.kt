@@ -25,3 +25,8 @@ val RedCard = Color(0xFFEF4444)
 val BlueGrey = Color(0xFF111827)
 val GreyBlueDark = Color(0xFFF1F5F9)
 val BackgroundLight = Color(0xFFF8FAFC)
+// Colores para modo oscuro
+val BackgroundDarkReal = Color(0xFF0F172A)      // fondo oscuro azul marino
+val CardBackgroundDark = Color(0xFF1E293B)      // cards oscuras
+val TextPrimaryDark = Color(0xFFF1F5F9)         // texto claro
+val TextSecondaryDark = Color(0xFF94A3B8)       // texto secundario claro

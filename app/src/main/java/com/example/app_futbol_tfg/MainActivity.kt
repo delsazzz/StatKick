@@ -1,44 +1,56 @@
 package com.example.app_futbol_tfg
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.lifecycleScope
+import com.example.app_futbol_tfg.data.SessionManager
 import com.example.app_futbol_tfg.data.database.AppDatabase
 import com.example.app_futbol_tfg.data.database.DatabaseProvider
+import com.example.app_futbol_tfg.data.initializeAppData
+import com.example.app_futbol_tfg.data.repository.ApiFootballRepositoryProvider
+import com.example.app_futbol_tfg.data.repository.AuthRepository
 import com.example.app_futbol_tfg.ui.screens.addmatch.AddMatchScreen
 import com.example.app_futbol_tfg.ui.screens.home.HomeScreen
+import com.example.app_futbol_tfg.ui.screens.login.LoginScreen
 import com.example.app_futbol_tfg.ui.screens.map.MapScreen
 import com.example.app_futbol_tfg.ui.screens.matchdetail.MatchDetailScreen
+import com.example.app_futbol_tfg.ui.screens.register.RegisterScreen
+import com.example.app_futbol_tfg.ui.screens.splash.SplashScreen
 import com.example.app_futbol_tfg.ui.screens.stats.StatsScreen
 import com.example.app_futbol_tfg.ui.screens.totalmatches.TotalMatchesScreen
 import com.example.app_futbol_tfg.ui.ui.theme.App_Futbol_TFGTheme
-import com.example.app_futbol_tfg.BuildConfig
-import com.example.app_futbol_tfg.data.initializeAppData
-import com.example.app_futbol_tfg.data.repository.ApiFootballRepositoryProvider
-import androidx.lifecycle.lifecycleScope
+import com.example.app_futbol_tfg.ui.ui.theme.DarkAppColors
+import com.example.app_futbol_tfg.ui.ui.theme.LightAppColors
+import com.example.app_futbol_tfg.ui.ui.theme.LocalAppColors
+import com.example.app_futbol_tfg.ui.viewmodels.BaseViewModelFactory
+import com.example.app_futbol_tfg.ui.viewmodels.LoginViewModel
+import com.example.app_futbol_tfg.ui.viewmodels.RegisterViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-private const val DEMO_USER_ID = 2
-// Definimos las pantallas que vamos a utilizar en la aplicación
 sealed interface AppScreen {
+    data object Splash : AppScreen
+    data object Login : AppScreen
+    data object Register : AppScreen
     data object Home : AppScreen
     data object AddMatch : AppScreen
     data object Stats : AppScreen
     data object Map : AppScreen
     data object TotalMatches : AppScreen
-    // En esta pantalla de MatchDetail además del id del partido, se guarda desde
-    // que pantalla se abrioó para controlar el botón de volver atrás
     data class MatchDetail(val matchId: Int, val from: DetailOrigin) : AppScreen
 }
-// Aquí definimos el origen desde dónde se abrió la pantalla MatchDetail
+
 enum class DetailOrigin {
     ADD_MATCH,
     SAVED_MATCHES
@@ -47,115 +59,197 @@ enum class DetailOrigin {
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Aquí obtenemos la instancia de la BBDD para toda la app
         val db = DatabaseProvider.getDatabase(applicationContext)
-        // Lanzamos la carga inicial de datos en segundo plano.
-        // La UI no se bloquea, los datos aparecen conforme se cargan.
-        lifecycleScope.launch(Dispatchers.IO) {
-            val apiRepo = ApiFootballRepositoryProvider.getInstance(db)
-            initializeAppData(apiRepo, BuildConfig.API_FOOTBALL_KEY)
+        val sessionManager = SessionManager(applicationContext)
+        val authRepository = AuthRepository(db, sessionManager)
+
+        val loginViewModel: LoginViewModel by viewModels {
+            BaseViewModelFactory(LoginViewModel::class.java) {
+                LoginViewModel(authRepository)
+            }
         }
+        val registerViewModel: RegisterViewModel by viewModels {
+            BaseViewModelFactory(RegisterViewModel::class.java) {
+                RegisterViewModel(authRepository)
+            }
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val apiRepo = ApiFootballRepositoryProvider.getInstance(db)
+                initializeAppData(apiRepo, BuildConfig.API_FOOTBALL_KEY)
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Error en carga inicial", e)
+            }
+        }
+
         enableEdgeToEdge()
         setContent {
-            App_Futbol_TFGTheme {
-                TfgApp(db = db)
+            MainContent(
+                db = db,
+                sessionManager = sessionManager,
+                loginViewModel = loginViewModel,
+                registerViewModel = registerViewModel
+            )
         }
     }
 }
-    @Composable
-    fun TfgApp(db: AppDatabase) {
-        var currentScreen by remember { mutableStateOf<AppScreen>(AppScreen.Home) }
-        // Estas variables se usan para el estado persistente de la bñusqueda en AddMatch
-        var addMatchSearchText by rememberSaveable { mutableStateOf("") }
-        var addMatchSelectedSuggestionType by rememberSaveable { mutableStateOf<String?>(null) }
-        var addMatchSelectedSuggestionId by rememberSaveable { mutableStateOf<Int?>(null) }
-        var addMatchShowSuggestions by rememberSaveable { mutableStateOf(false) }
 
-        when (val screen = currentScreen) {
-            AppScreen.Home -> HomeScreen(
-                userId = DEMO_USER_ID,
+@Composable
+fun MainContent(
+    db: AppDatabase,
+    sessionManager: SessionManager,
+    loginViewModel: LoginViewModel,
+    registerViewModel: RegisterViewModel
+) {
+    var isDarkMode by remember { mutableStateOf(sessionManager.isDarkMode()) }
+    val appColors = if (isDarkMode) DarkAppColors else LightAppColors
+
+    CompositionLocalProvider(LocalAppColors provides appColors) {
+        App_Futbol_TFGTheme(darkTheme = isDarkMode) {
+            TfgApp(
                 db = db,
-                onNavigateBottom = { index ->
-                    currentScreen = when (index) {
-                        0 -> AppScreen.Home
-                        1 -> AppScreen.AddMatch
-                        2 -> AppScreen.Stats
-                        else -> AppScreen.Map
-                    }
-                },
-                onOpenTotalMatches = {currentScreen = AppScreen.TotalMatches}
-            )
-            AppScreen.AddMatch -> AddMatchScreen(
-                db = db,
-                onNavigateBottom = { index ->
-                    currentScreen = when (index) {
-                        0 -> AppScreen.Home
-                        1 -> AppScreen.AddMatch
-                        2 -> AppScreen.Stats
-                        else -> AppScreen.Map
-                    }
-                },
-                onOpenMatchDetail = { matchId ->
-                    currentScreen = AppScreen.MatchDetail(
-                        matchId = matchId,
-                        from = DetailOrigin.ADD_MATCH
-                    )
-                },
-                searchText = addMatchSearchText,
-                onSearchTextChange = { addMatchSearchText = it },
-                selectedSuggestionType = addMatchSelectedSuggestionType,
-                onSelectedSuggestionTypeChange = { addMatchSelectedSuggestionType = it },
-                selectedSuggestionId = addMatchSelectedSuggestionId,
-                onSelectedSuggestionIdChange = { addMatchSelectedSuggestionId = it },
-                showSuggestions = addMatchShowSuggestions,
-                onShowSuggestionsChange = { addMatchShowSuggestions = it }
-            )
-            AppScreen.Stats -> StatsScreen(
-                userId = DEMO_USER_ID,
-                db = db,
-                onNavigateBottom = { index ->
-                    currentScreen = when (index) {
-                        0 -> AppScreen.Home
-                        1 -> AppScreen.AddMatch
-                        2 -> AppScreen.Stats
-                        else -> AppScreen.Map
-                    }
+                sessionManager = sessionManager,
+                loginViewModel = loginViewModel,
+                registerViewModel = registerViewModel,
+                onToggleDarkMode = {
+                    isDarkMode = !isDarkMode
+                    sessionManager.setDarkMode(isDarkMode)
                 }
-            )
-            AppScreen.TotalMatches -> TotalMatchesScreen(
-                userId = DEMO_USER_ID,
-                db = db,
-                onBack = {
-                    currentScreen = AppScreen.Home
-                },
-                onOpenMatchDetail = { matchId ->
-                    currentScreen = AppScreen.MatchDetail(
-                        matchId = matchId,
-                        from = DetailOrigin.SAVED_MATCHES
-                    )
-                }
-            )
-            AppScreen.Map -> MapScreen(
-                onNavigateBottom = { index ->
-                    currentScreen = when (index) {
-                        0 -> AppScreen.Home
-                        1 -> AppScreen.AddMatch
-                        2 -> AppScreen.Stats
-                        else -> AppScreen.Map
-                    }
-                }
-            )
-            is AppScreen.MatchDetail -> MatchDetailScreen(
-                matchId = screen.matchId,
-                userId = DEMO_USER_ID,
-                db = db,
-                onBack = {
-                    currentScreen = when (screen.from) {
-                        DetailOrigin.ADD_MATCH -> AppScreen.AddMatch
-                        DetailOrigin.SAVED_MATCHES -> AppScreen.TotalMatches
-                    }
-                },
             )
         }
+    }
+}
+
+@Composable
+fun TfgApp(
+    db: AppDatabase,
+    sessionManager: SessionManager,
+    loginViewModel: LoginViewModel,
+    registerViewModel: RegisterViewModel,
+    onToggleDarkMode: () -> Unit
+) {
+    var currentScreen by remember { mutableStateOf<AppScreen>(AppScreen.Splash) }
+    var currentUserId by remember { mutableStateOf(sessionManager.getUserId()) }
+    var addMatchSearchText by rememberSaveable { mutableStateOf("") }
+    var addMatchSelectedSuggestionType by rememberSaveable { mutableStateOf<String?>(null) }
+    var addMatchSelectedSuggestionId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var addMatchShowSuggestions by rememberSaveable { mutableStateOf(false) }
+
+    val onLogout: () -> Unit = {
+        sessionManager.clearSession()
+        currentUserId = -1
+        currentScreen = AppScreen.Login
+    }
+
+    when (val screen = currentScreen) {
+        AppScreen.Splash -> SplashScreen(
+            isLoggedIn = sessionManager.isLoggedIn(),
+            onNavigateToHome = {
+                currentUserId = sessionManager.getUserId()
+                currentScreen = AppScreen.Home
+            },
+            onNavigateToLogin = { currentScreen = AppScreen.Login }
+        )
+        AppScreen.Login -> LoginScreen(
+            viewModel = loginViewModel,
+            onLoginSuccess = { userId ->
+                currentUserId = userId
+                currentScreen = AppScreen.Home
+            },
+            onNavigateToRegister = { currentScreen = AppScreen.Register }
+        )
+        AppScreen.Register -> RegisterScreen(
+            viewModel = registerViewModel,
+            onRegisterSuccess = { userId ->
+                currentUserId = userId
+                currentScreen = AppScreen.Home
+            },
+            onNavigateToLogin = { currentScreen = AppScreen.Login }
+        )
+        AppScreen.Home -> HomeScreen(
+            userId = currentUserId,
+            db = db,
+            onNavigateBottom = { index ->
+                currentScreen = when (index) {
+                    0 -> AppScreen.Home
+                    1 -> AppScreen.AddMatch
+                    2 -> AppScreen.Stats
+                    else -> AppScreen.Map
+                }
+            },
+            onOpenTotalMatches = { currentScreen = AppScreen.TotalMatches },
+            onLogout = onLogout,
+            onToggleDarkMode = onToggleDarkMode
+        )
+        AppScreen.AddMatch -> AddMatchScreen(
+            db = db,
+            onNavigateBottom = { index ->
+                currentScreen = when (index) {
+                    0 -> AppScreen.Home
+                    1 -> AppScreen.AddMatch
+                    2 -> AppScreen.Stats
+                    else -> AppScreen.Map
+                }
+            },
+            onOpenMatchDetail = { matchId ->
+                currentScreen = AppScreen.MatchDetail(
+                    matchId = matchId,
+                    from = DetailOrigin.ADD_MATCH
+                )
+            },
+            searchText = addMatchSearchText,
+            onSearchTextChange = { addMatchSearchText = it },
+            selectedSuggestionType = addMatchSelectedSuggestionType,
+            onSelectedSuggestionTypeChange = { addMatchSelectedSuggestionType = it },
+            selectedSuggestionId = addMatchSelectedSuggestionId,
+            onSelectedSuggestionIdChange = { addMatchSelectedSuggestionId = it },
+            showSuggestions = addMatchShowSuggestions,
+            onShowSuggestionsChange = { addMatchShowSuggestions = it }
+        )
+        AppScreen.Stats -> StatsScreen(
+            userId = currentUserId,
+            db = db,
+            onNavigateBottom = { index ->
+                currentScreen = when (index) {
+                    0 -> AppScreen.Home
+                    1 -> AppScreen.AddMatch
+                    2 -> AppScreen.Stats
+                    else -> AppScreen.Map
+                }
+            }
+        )
+        AppScreen.TotalMatches -> TotalMatchesScreen(
+            userId = currentUserId,
+            db = db,
+            onBack = { currentScreen = AppScreen.Home },
+            onOpenMatchDetail = { matchId ->
+                currentScreen = AppScreen.MatchDetail(
+                    matchId = matchId,
+                    from = DetailOrigin.SAVED_MATCHES
+                )
+            }
+        )
+        AppScreen.Map -> MapScreen(
+            onNavigateBottom = { index ->
+                currentScreen = when (index) {
+                    0 -> AppScreen.Home
+                    1 -> AppScreen.AddMatch
+                    2 -> AppScreen.Stats
+                    else -> AppScreen.Map
+                }
+            }
+        )
+        is AppScreen.MatchDetail -> MatchDetailScreen(
+            matchId = screen.matchId,
+            userId = currentUserId,
+            db = db,
+            onBack = {
+                currentScreen = when (screen.from) {
+                    DetailOrigin.ADD_MATCH -> AppScreen.AddMatch
+                    DetailOrigin.SAVED_MATCHES -> AppScreen.TotalMatches
+                }
+            }
+        )
     }
 }
