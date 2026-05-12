@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,18 +39,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.app_futbol_tfg.R
 import com.example.app_futbol_tfg.data.database.AppDatabase
+import com.example.app_futbol_tfg.ui.components.ApiImage
 import com.example.app_futbol_tfg.ui.components.AppBottomBar
 import com.example.app_futbol_tfg.ui.components.AppTopBar
-
 import com.example.app_futbol_tfg.ui.ui.theme.LocalAppColors
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
-
 
 @Composable
 fun HomeScreen(
@@ -60,7 +62,6 @@ fun HomeScreen(
     onLogout: () -> Unit,
     onToggleDarkMode: () -> Unit
 ) {
-    // Colores dinámicos según el tema activo
     val appColors = LocalAppColors.current
     val backgroundColor = appColors.background
     val cardColor = appColors.card
@@ -88,6 +89,8 @@ fun HomeScreen(
 
     val mostViewedTeam = teamCounter.maxByOrNull { it.value }?.key
     val mostViewedTeamName = mostViewedTeam?.let { equiposMap[it]?.nombre } ?: "-"
+    val mostViewedTeamCrest = mostViewedTeam?.let { equiposMap[it]?.escudo }
+
     val matchIds = partidosVistos.map { it.id }
     val playerCounter = mutableMapOf<Int, Int>()
     var menuExpanded by remember { mutableStateOf(false) }
@@ -103,7 +106,10 @@ fun HomeScreen(
     }
 
     val mostViewedPlayer = playerCounter.maxByOrNull { it.value }?.key
-    val mostViewedPlayerName = mostViewedPlayer?.let { jugadoresMap[it]?.nombre } ?: "-"
+    val mostViewedPlayerName = mostViewedPlayer?.let { id ->
+        val jugador = jugadoresMap[id]
+        listOfNotNull(jugador?.nombre, jugador?.apellido1).joinToString(" ")
+    } ?: "-"
 
     Scaffold(
         topBar = {
@@ -178,7 +184,6 @@ fun HomeScreen(
                     .padding(horizontal = horizontalPadding, vertical = 18.dp),
                 verticalArrangement = Arrangement.spacedBy(sectionSpacing)
             ) {
-                // Card del perfil del usuario
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(cardCorner),
@@ -222,7 +227,6 @@ fun HomeScreen(
                     }
                 }
 
-                // Estadísticas
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         text = "Resumen estadísticas",
@@ -253,12 +257,14 @@ fun HomeScreen(
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.Top
                     ) {
                         StatCard(
                             modifier = Modifier.weight(1f),
                             title = "Equipo más visto",
                             value = mostViewedTeamName,
+                            imageUrl = mostViewedTeamCrest,
                             cardColor = cardColor,
                             textColorPrimary = textColorPrimary,
                             textColorSecondary = textColorSecondary
@@ -274,7 +280,6 @@ fun HomeScreen(
                     }
                 }
 
-                // Logros
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         text = "Logros",
@@ -317,27 +322,49 @@ private fun StatCard(
     modifier: Modifier = Modifier,
     title: String,
     value: String,
+    imageUrl: String? = null,
     onClick: (() -> Unit)? = null,
     cardColor: Color,
     textColorPrimary: Color,
     textColorSecondary: Color
 ) {
     Card(
-        modifier = if (onClick != null) modifier.clickable { onClick() } else modifier,
+        modifier = if (onClick != null) modifier.wrapContentHeight().clickable { onClick() }
+        else modifier.wrapContentHeight(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = cardColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(18.dp),
+            modifier = Modifier.fillMaxWidth().wrapContentHeight().padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(text = title, color = textColorSecondary, style = MaterialTheme.typography.bodyMedium)
-            Text(
-                text = value,
-                color = textColorPrimary,
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (imageUrl != null) {
+                    ApiImage(
+                        url = imageUrl,
+                        contentDescription = value,
+                        modifier = Modifier.size(24.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+                Text(
+                    text = value,
+                    color = textColorPrimary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    softWrap = true,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                )
+            }
         }
     }
 }
