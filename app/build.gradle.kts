@@ -5,6 +5,14 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+// Leemos la API key del local.properties antes del bloque android
+val apiKey = rootProject.file("local.properties")
+    .takeIf { it.exists() }
+    ?.readLines()
+    ?.firstOrNull { it.startsWith("API_FOOTBALL_KEY=") }
+    ?.substringAfter("=")
+    ?: ""
+
 android {
     namespace = "com.example.app_futbol_tfg"
     compileSdk = 36
@@ -18,12 +26,10 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        val localProperties = com.android.build.gradle.internal.cxx.configure.gradleLocalProperties(rootDir, providers)
-
         buildConfigField(
             "String",
             "API_FOOTBALL_KEY",
-            "\"${localProperties.getProperty("API_FOOTBALL_KEY") ?: ""}\""
+            "\"$apiKey\""
         )
     }
 
@@ -50,7 +56,6 @@ android {
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

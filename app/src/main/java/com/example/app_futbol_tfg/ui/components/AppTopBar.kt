@@ -1,6 +1,7 @@
 package com.example.app_futbol_tfg.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -20,16 +21,19 @@ import com.example.app_futbol_tfg.R
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
 import androidx.compose.foundation.layout.statusBarsPadding
 
-// Esta función se puede reutilizar para todas las pantallas 
+// Esta función se puede reutilizar para todas las pantallas
 // Muestra título, botón de retroceso y una acción opcional
 @Composable
 fun AppTopBar(
-    title: String, // Título de cada pantalla
-    showBackButton: Boolean = false, // Si se muestra el botón de volver
-    showActionButton: Boolean = false, // Si se muestra un botón de acción a la derecha
-    actionIconRes: Int? = null, 
-    onBackClick: () -> Unit = {}, // Acción al pulsar el botón de volver
-    onActionClick: () -> Unit = {} // Acción de pulsar el botón de la derecha
+    title: String,
+    showBackButton: Boolean = false,
+    showActionButton: Boolean = false,
+    actionIconRes: Int? = null,
+    onBackClick: () -> Unit = {},
+    onActionClick: () -> Unit = {},
+    // Contenido extra que se renderiza junto al botón de acción
+    // Sirve para anclar el DropdownMenu correctamente
+    dropdownContent: @Composable () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -40,7 +44,6 @@ fun AppTopBar(
             .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Botón de volver
         if (showBackButton) {
             IconButton(onClick = onBackClick) {
                 Icon(
@@ -50,25 +53,28 @@ fun AppTopBar(
                 )
             }
         }
-        // Título principal de la barra
         Text(
             text = title,
             modifier = Modifier
-                .weight(1f) // El título ocupa el espacio central
+                .weight(1f)
                 .padding(start = if (showBackButton) 4.dp else 8.dp),
             color = Color.White,
             style = MaterialTheme.typography.titleLarge.copy(
                 fontWeight = FontWeight.SemiBold
             )
         )
-        // Botón de acción de la derecha
+        // Box que contiene el botón de acción y el dropdown anclado a él
         if (showActionButton && actionIconRes != null) {
-            IconButton(onClick = onActionClick) {
-                Icon(
-                    painter = painterResource(id = actionIconRes),
-                    contentDescription = "Acción",
-                    tint = Color.White
-                )
+            Box {
+                IconButton(onClick = onActionClick) {
+                    Icon(
+                        painter = painterResource(id = actionIconRes),
+                        contentDescription = "Acción",
+                        tint = Color.White
+                    )
+                }
+                // El dropdown se renderiza aquí anclado al botón
+                dropdownContent()
             }
         }
     }

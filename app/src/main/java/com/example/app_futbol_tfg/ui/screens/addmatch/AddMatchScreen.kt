@@ -46,8 +46,6 @@ import com.example.app_futbol_tfg.ui.components.AppBottomBar
 import com.example.app_futbol_tfg.ui.components.AppTopBar
 import com.example.app_futbol_tfg.ui.ui.theme.BackgroundLight
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
-import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
-import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -62,6 +60,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.example.app_futbol_tfg.ui.ui.theme.LocalAppColors
 
 @Composable
 fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatchDetail: (Int) -> Unit,
@@ -69,6 +68,7 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                 onSelectedSuggestionTypeChange: (String?) -> Unit, selectedSuggestionId: Int?, onSelectedSuggestionIdChange: (Int?) -> Unit,
                 showSuggestions: Boolean, onShowSuggestionsChange: (Boolean) -> Unit) {
 
+    val appColors = LocalAppColors.current
     val context = LocalContext.current
 
     val scope = rememberCoroutineScope()
@@ -205,13 +205,13 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                 onItemSelected = onNavigateBottom
             )
         },
-        containerColor = BackgroundLight
+        containerColor = appColors.background
     ) { innerPadding ->
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(BackgroundLight)
+                .background(appColors.background)
         ) {
             // Variables adaptativas según tamaño del dispositivo
             val isSmallScreen = maxWidth < 360.dp || maxHeight < 700.dp
@@ -250,17 +250,17 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                         Icon(
                             painter = painterResource(id = R.drawable.nav_more),
                             contentDescription = "Buscar",
-                            tint = TextSecondary
+                            tint = appColors.textSecondary
                         )
                     },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = PrimaryBlue,
                         unfocusedBorderColor = Color(0xFFCBD5E1),
                         focusedLabelColor = PrimaryBlue,
-                        unfocusedLabelColor = TextSecondary,
+                        unfocusedLabelColor = appColors.textSecondary,
                         cursorColor = PrimaryBlue,
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary,
+                        focusedTextColor = appColors.textPrimary,
+                        unfocusedTextColor = appColors.textPrimary,
                         focusedContainerColor = Color.White,
                         unfocusedContainerColor = Color.White
                     )
@@ -298,7 +298,7 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                 }
                 Text(
                     text = sectionTitle,
-                    color = TextPrimary,
+                    color = appColors.textPrimary,
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold)
                 )
                 // Indicador de carga mientras se obtienen partidos de la API
@@ -315,7 +315,7 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                         )
                         Text(
                             text = "Buscando partidos...",
-                            color = TextSecondary,
+                            color = appColors.textSecondary,
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -338,6 +338,7 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
 // Desplegable de sugerencia mostrado bajo el buscador
 @Composable
 private fun SuggestionsDropdown(suggestions: List<SearchSuggestionUi>, onSuggestionSelected: (SearchSuggestionUi) -> Unit) {
+    val appColors = LocalAppColors.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
@@ -377,7 +378,7 @@ private fun SuggestionsDropdown(suggestions: List<SearchSuggestionUi>, onSuggest
                             is SearchSuggestionUi.Team -> suggestion.name
                             is SearchSuggestionUi.Competition -> suggestion.name
                         },
-                        color = TextPrimary,
+                        color = appColors.textPrimary,
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }

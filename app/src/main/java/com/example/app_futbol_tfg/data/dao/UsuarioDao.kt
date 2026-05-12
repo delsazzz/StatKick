@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.example.app_futbol_tfg.data.entity.UsuarioEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface UsuarioDao {
@@ -16,6 +17,8 @@ interface UsuarioDao {
     suspend fun getByUsername(nombreUsuario: String): UsuarioEntity?
     @Query("SELECT * FROM Usuarios WHERE email = :email LIMIT 1")
     suspend fun getByEmail(email: String): UsuarioEntity?
+    @Query("SELECT * FROM Usuarios WHERE id = :id LIMIT 1")
+    fun getByIdFlow(id: Int): Flow<UsuarioEntity?>
     // En este caso ABORT hace que si hay conflicto con una restricción en la base de datos
     // es decir un email o nombre de usuario repetido la operación se cancela y se lanza una excepción
     @Insert(onConflict = OnConflictStrategy.ABORT)

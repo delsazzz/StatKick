@@ -1,5 +1,6 @@
 package com.example.app_futbol_tfg.ui.screens.home
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,6 +22,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -30,6 +33,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,43 +46,51 @@ import com.example.app_futbol_tfg.R
 import com.example.app_futbol_tfg.data.database.AppDatabase
 import com.example.app_futbol_tfg.ui.components.AppBottomBar
 import com.example.app_futbol_tfg.ui.components.AppTopBar
-import com.example.app_futbol_tfg.ui.ui.theme.BackgroundLight
-import com.example.app_futbol_tfg.ui.ui.theme.CardBackground
+
+import com.example.app_futbol_tfg.ui.ui.theme.LocalAppColors
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
-import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
-import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
+
 
 @Composable
-fun HomeScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit,onOpenTotalMatches: () -> Unit) {
-    // Cargamos datos auxiliares para utilizar en la pantalla
+fun HomeScreen(
+    userId: Int,
+    db: AppDatabase,
+    onNavigateBottom: (Int) -> Unit,
+    onOpenTotalMatches: () -> Unit,
+    onLogout: () -> Unit,
+    onToggleDarkMode: () -> Unit
+) {
+    // Colores dinámicos según el tema activo
+    val appColors = LocalAppColors.current
+    val backgroundColor = appColors.background
+    val cardColor = appColors.card
+    val textColorPrimary = appColors.textPrimary
+    val textColorSecondary = appColors.textSecondary
+
     val partidosVistos by db.usuarioPartidoDao()
         .getPartidosByUsuario(userId)
         .collectAsState(initial = emptyList())
     val equipos by db.equipoDao().getAll().collectAsState(initial = emptyList())
     val jugadores by db.jugadorDao().getAll().collectAsState(initial = emptyList())
+    val usuario by db.usuarioDao().getByIdFlow(userId).collectAsState(initial = null)
 
-    // Transformamos las listas en mapas clave-valor para que el acceso a los datos sea más eficiente y no recorra listas
     val equiposMap = equipos.associateBy { it.id }
     val jugadoresMap = jugadores.associateBy { it.id }
 
-    // Generamos métricas básicas para las estadísticas
     val totalPartidos = partidosVistos.size
     val totalGoles = partidosVistos.sumOf { it.golesLocal + it.golesVisitante }
     val teamCounter = mutableMapOf<Int, Int>()
 
     partidosVistos.forEach { partido ->
-        teamCounter[partido.idEquipoLocal] =
-            (teamCounter[partido.idEquipoLocal] ?: 0) + 1
-        teamCounter[partido.idEquipoVisitante] =
-            (teamCounter[partido.idEquipoVisitante] ?: 0) + 1
+        teamCounter[partido.idEquipoLocal] = (teamCounter[partido.idEquipoLocal] ?: 0) + 1
+        teamCounter[partido.idEquipoVisitante] = (teamCounter[partido.idEquipoVisitante] ?: 0) + 1
     }
 
     val mostViewedTeam = teamCounter.maxByOrNull { it.value }?.key
     val mostViewedTeamName = mostViewedTeam?.let { equiposMap[it]?.nombre } ?: "-"
-
     val matchIds = partidosVistos.map { it.id }
-
     val playerCounter = mutableMapOf<Int, Int>()
+    var menuExpanded by remember { mutableStateOf(false) }
 
     val partidoJugadores by if (matchIds.isNotEmpty()) {
         db.partidoJugadorDao().getByPartidos(matchIds).collectAsState(initial = emptyList())
@@ -87,44 +99,70 @@ fun HomeScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit,onO
     }
 
     partidoJugadores.forEach { pj ->
-        playerCounter[pj.idJugador] =
-            (playerCounter[pj.idJugador] ?: 0) + 1
+        playerCounter[pj.idJugador] = (playerCounter[pj.idJugador] ?: 0) + 1
     }
 
     val mostViewedPlayer = playerCounter.maxByOrNull { it.value }?.key
-
-    val mostViewedPlayerName =
-        mostViewedPlayer?.let { jugadoresMap[it]?.nombre } ?: "-"
+    val mostViewedPlayerName = mostViewedPlayer?.let { jugadoresMap[it]?.nombre } ?: "-"
 
     Scaffold(
-        // Barra superior reutilizable
         topBar = {
             AppTopBar(
                 title = "Mi perfil",
                 showActionButton = true,
                 actionIconRes = R.drawable.settings_gear,
-                onActionClick = {
-                    // Más adelante aquí podréis abrir ajustes
+                onActionClick = { menuExpanded = true },
+                dropdownContent = {
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Modo oscuro") },
+                            onClick = {
+                                menuExpanded = false
+                                onToggleDarkMode()
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.settings_gear),
+                                    contentDescription = "Modo oscuro",
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Cerrar sesión") },
+                            onClick = {
+                                menuExpanded = false
+                                onLogout()
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.settings_gear),
+                                    contentDescription = "Cerrar sesión",
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        )
+                    }
                 }
             )
         },
-        // Barra inferior reutilizable
         bottomBar = {
             AppBottomBar(
                 selectedIndex = 0,
                 onItemSelected = onNavigateBottom
             )
         },
-        // Fondo principal de pantalla
-        containerColor = BackgroundLight
+        containerColor = backgroundColor
     ) { innerPadding ->
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(BackgroundLight)
+                .background(backgroundColor)
         ) {
-            // Ajustes adaptativos según tamaño disponible
             val isSmallScreen = maxWidth < 360.dp || maxHeight < 700.dp
             val avatarSize = if (isSmallScreen) 84.dp else 108.dp
             val titleSize = if (isSmallScreen) 22.sp else 28.sp
@@ -136,17 +174,15 @@ fun HomeScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit,onO
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState()) // Añadimos un scroll vertical
+                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = horizontalPadding, vertical = 18.dp),
                 verticalArrangement = Arrangement.spacedBy(sectionSpacing)
             ) {
-                // Primer bloque de la pantalla con la cabecera del usuario
+                // Card del perfil del usuario
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(cardCorner),
-                    colors = CardDefaults.cardColors(
-                        containerColor = CardBackground
-                    ),
+                    colors = CardDefaults.cardColors(containerColor = cardColor),
                     elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                 ) {
                     Column(
@@ -155,7 +191,6 @@ fun HomeScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit,onO
                             .padding(vertical = 24.dp, horizontal = 20.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // Foto genérica de perfil
                         Box(
                             modifier = Modifier
                                 .size(avatarSize)
@@ -170,38 +205,30 @@ fun HomeScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit,onO
                             )
                         }
                         Spacer(modifier = Modifier.height(16.dp))
-                        // Nombre de usuario
                         Text(
-                            text = "Sergio Álvarez",
-                            color = TextPrimary,
+                            text = usuario?.nombreUsuario ?: "Usuario",
+                            color = textColorPrimary,
                             style = MaterialTheme.typography.headlineSmall.copy(
                                 fontSize = titleSize,
                                 fontWeight = FontWeight.Bold
                             )
                         )
                         Spacer(modifier = Modifier.height(6.dp))
-                        // Texto secundario
                         Text(
-                            text = "Usuario activo · Amante del fútbol europeo",
-                            color = TextSecondary,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontSize = subtitleSize
-                            )
+                            text = "Usuario activo · ${usuario?.email ?: ""}",
+                            color = textColorSecondary,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = subtitleSize)
                         )
                     }
                 }
-                // Segundo bloque de la pantalla con estadísticas generales del usuario
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
+
+                // Estadísticas
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         text = "Resumen estadísticas",
-                        color = TextPrimary,
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        color = textColorPrimary,
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold)
                     )
-                    // Primera fila de estadísticas
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -210,15 +237,20 @@ fun HomeScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit,onO
                             modifier = Modifier.weight(1f),
                             title = "Partidos vistos",
                             value = "$totalPartidos",
-                            onClick = onOpenTotalMatches
+                            onClick = onOpenTotalMatches,
+                            cardColor = cardColor,
+                            textColorPrimary = textColorPrimary,
+                            textColorSecondary = textColorSecondary
                         )
                         StatCard(
                             modifier = Modifier.weight(1f),
                             title = "Goles vistos",
-                            value = "$totalGoles"
+                            value = "$totalGoles",
+                            cardColor = cardColor,
+                            textColorPrimary = textColorPrimary,
+                            textColorSecondary = textColorSecondary
                         )
                     }
-                    // Segunda fila
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -226,114 +258,109 @@ fun HomeScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit,onO
                         StatCard(
                             modifier = Modifier.weight(1f),
                             title = "Equipo más visto",
-                            value = mostViewedTeamName
+                            value = mostViewedTeamName,
+                            cardColor = cardColor,
+                            textColorPrimary = textColorPrimary,
+                            textColorSecondary = textColorSecondary
                         )
                         StatCard(
                             modifier = Modifier.weight(1f),
                             title = "Jugador más visto",
-                            value = mostViewedPlayerName
+                            value = mostViewedPlayerName,
+                            cardColor = cardColor,
+                            textColorPrimary = textColorPrimary,
+                            textColorSecondary = textColorSecondary
                         )
                     }
-                    // Si queremos añadir más estadísticas se pueden añadir más
                 }
-                // Tercer bloque de la pantalla con los logros del usuario
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
+
+                // Logros
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         text = "Logros",
-                        color = TextPrimary,
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        color = textColorPrimary,
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold)
                     )
                     AchievementCard(
                         title = "Primer partido registrado",
                         description = "Has añadido tu primer partido a la aplicación.",
-                        iconRes = R.drawable.football_ball
+                        iconRes = R.drawable.football_ball,
+                        cardColor = cardColor,
+                        textColorPrimary = textColorPrimary,
+                        textColorSecondary = textColorSecondary
                     )
                     AchievementCard(
                         title = "Fan del gol",
                         description = "Has superado los 300 goles visualizados.",
-                        iconRes = R.drawable.football_goal
+                        iconRes = R.drawable.football_goal,
+                        cardColor = cardColor,
+                        textColorPrimary = textColorPrimary,
+                        textColorSecondary = textColorSecondary
                     )
                     AchievementCard(
                         title = "Explorador de estadios",
                         description = "Ya tienes varios estadios guardados en el mapa.",
-                        iconRes = R.drawable.map_pin
+                        iconRes = R.drawable.map_pin,
+                        cardColor = cardColor,
+                        textColorPrimary = textColorPrimary,
+                        textColorSecondary = textColorSecondary
                     )
                 }
-                // Espacio final para que la bottom bar no quede pegada visualmente
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
 }
-// Card reutilizable para estadísticas rápidas del perfil.
-// Recibe un título y un valor principal.
+
 @Composable
 private fun StatCard(
     modifier: Modifier = Modifier,
     title: String,
     value: String,
-    onClick: (() -> Unit)? = null
+    onClick: (() -> Unit)? = null,
+    cardColor: Color,
+    textColorPrimary: Color,
+    textColorSecondary: Color
 ) {
     Card(
-        modifier = if (onClick != null) {
-            modifier.clickable { onClick() }
-        } else {
-            modifier
-        },
+        modifier = if (onClick != null) modifier.clickable { onClick() } else modifier,
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = CardBackground
-        ),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(18.dp),
+            modifier = Modifier.fillMaxWidth().padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(
-                text = title,
-                color = TextSecondary,
-                style = MaterialTheme.typography.bodyMedium
-            )
+            Text(text = title, color = textColorSecondary, style = MaterialTheme.typography.bodyMedium)
             Text(
                 text = value,
-                color = TextPrimary,
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold
-                )
+                color = textColorPrimary,
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
             )
         }
     }
 }
-// Card reutilizable para los logros del usuario.
-// Muestra icono + título + descripción.
+
 @Composable
 private fun AchievementCard(
     title: String,
     description: String,
-    iconRes: Int
+    iconRes: Int,
+    cardColor: Color,
+    textColorPrimary: Color,
+    textColorSecondary: Color
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = CardBackground
-        ),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(18.dp),
+            modifier = Modifier.fillMaxWidth().padding(18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Caja circular para el icono
             Box(
                 modifier = Modifier
                     .size(52.dp)
@@ -355,14 +382,12 @@ private fun AchievementCard(
             ) {
                 Text(
                     text = title,
-                    color = TextPrimary,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    color = textColorPrimary,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
                 )
                 Text(
                     text = description,
-                    color = TextSecondary,
+                    color = textColorSecondary,
                     style = MaterialTheme.typography.bodyMedium
                 )
             }

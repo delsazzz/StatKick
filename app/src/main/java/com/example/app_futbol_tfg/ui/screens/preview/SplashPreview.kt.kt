@@ -14,5 +14,9 @@ import com.example.app_futbol_tfg.ui.screens.stats.StatsScreen
 @Preview
 @Composable
 fun SplashPreview() {
-    SplashScreen()
+    SplashScreen(
+        isLoggedIn = false,
+        onNavigateToHome = {},
+        onNavigateToLogin = {}
+    )
 }
