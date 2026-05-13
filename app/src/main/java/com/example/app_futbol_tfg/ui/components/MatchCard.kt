@@ -31,6 +31,7 @@ import com.example.app_futbol_tfg.ui.ui.theme.CardBackground
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
 import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
 import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
+import com.example.app_futbol_tfg.ui.ui.theme.LocalAppColors
 
 //  Modelo visual temporal para la maqueta de partidos sugeridos.
 data class MatchSuggestionUi(
@@ -56,13 +57,14 @@ fun MatchCard(
     cardPadding: Dp,
     onOpenMatchDetail: (Int) -> Unit
 ) {
+    val appColors = LocalAppColors.current
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onOpenMatchDetail(match.id) },
         shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(
-            containerColor = CardBackground
+            containerColor = appColors.card
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
@@ -83,7 +85,7 @@ fun MatchCard(
                         modifier = Modifier.weight(1f),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        color = TextPrimary,
+                        color = appColors.textPrimary,
                         textAlign = TextAlign.End,
                         style = MaterialTheme.typography.bodyLarge.copy(
                             fontSize = teamNameSize,
@@ -123,7 +125,7 @@ fun MatchCard(
                         modifier = Modifier.weight(1f),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        color = TextPrimary,
+                        color = appColors.textPrimary,
                         textAlign = TextAlign.Start,
                         style = MaterialTheme.typography.bodyLarge.copy(
                             fontSize = teamNameSize,
@@ -138,7 +140,7 @@ fun MatchCard(
                 ) {
                     Text(
                         text = match.date,
-                        color = TextSecondary,
+                        color = appColors.textSecondary,
                         style = MaterialTheme.typography.bodySmall
                     )
                     Spacer(modifier = Modifier.width(10.dp))
@@ -146,7 +148,7 @@ fun MatchCard(
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
                         text = match.season,
-                        color = TextSecondary,
+                        color = appColors.textSecondary,
                         style = MaterialTheme.typography.bodySmall
                     )
                     Spacer(modifier = Modifier.width(10.dp))
@@ -157,7 +159,7 @@ fun MatchCard(
                         modifier = Modifier.weight(1f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        color = TextSecondary,
+                        color = appColors.textSecondary,
                         style = MaterialTheme.typography.bodySmall
                     )
                     Spacer(modifier = Modifier.width(10.dp))
@@ -174,9 +176,10 @@ fun MatchCard(
     // Separador entre texto con forma de punto ·
     @Composable
     private fun DotSeparator() {
+        val appColors = LocalAppColors.current
         Text(
             text = "•",
-            color = TextSecondary,
+            color = appColors.textSecondary,
             style = MaterialTheme.typography.bodySmall
         )
     }

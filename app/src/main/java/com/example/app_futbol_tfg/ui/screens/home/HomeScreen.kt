@@ -68,7 +68,9 @@ fun HomeScreen(
     onNavigateBottom: (Int) -> Unit,
     onOpenTotalMatches: () -> Unit,
     onLogout: () -> Unit,
-    onToggleDarkMode: () -> Unit
+    onToggleDarkMode: () -> Unit,
+    onEditProfile: () -> Unit,
+    isDarkMode: Boolean
 ) {
     val appColors = LocalAppColors.current
     val backgroundColor = appColors.background
@@ -80,8 +82,9 @@ fun HomeScreen(
     val equipos by db.equipoDao().getAll().collectAsState(initial = emptyList())
     val jugadores by db.jugadorDao().getAll().collectAsState(initial = emptyList())
     val usuario by db.usuarioDao().getByIdFlow(userId).collectAsState(initial = null)
-    val usuarioLogros by db.usuarioLogroDao().getByUsuario(userId).collectAsState(initial = emptyList())
-    val unlockedAchievementIds = usuarioLogros.map { it.idLogro }.toSet()
+    val usuarioLogrosState = db.usuarioLogroDao().getByUsuario(userId).collectAsState(initial = null)
+    val usuarioLogros = usuarioLogrosState.value
+    val unlockedAchievementIds = usuarioLogros?.map { it.idLogro }?.toSet() ?: emptySet()
 
     val equiposMap = equipos.associateBy { it.id }
     val jugadoresMap = jugadores.associateBy { it.id }
@@ -200,6 +203,7 @@ fun HomeScreen(
         )
     )
     LaunchedEffect(achievements, usuarioLogros) {
+        if (usuarioLogros == null) return@LaunchedEffect
         val nuevosLogros = achievements.filter { achievement ->
             achievement.desbloqueado && achievement.id !in unlockedAchievementIds
         }
@@ -235,7 +239,9 @@ fun HomeScreen(
                         onDismissRequest = { menuExpanded = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Modo oscuro") },
+                            text = {
+                                Text(
+                                    text = if (isDarkMode) "Modo Claro" else "Modo oscuro") },
                             onClick = {
                                 menuExpanded = false
                                 onToggleDarkMode()
@@ -243,7 +249,7 @@ fun HomeScreen(
                             leadingIcon = {
                                 Icon(
                                     painter = painterResource(id = R.drawable.settings_gear),
-                                    contentDescription = "Modo oscuro",
+                                    contentDescription =  if (isDarkMode) "Modo claro" else "Modo oscuro",
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -315,7 +321,7 @@ fun HomeScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Image(
-                                painter = painterResource(id = R.drawable.profile_user),
+                                painter = painterResource(id = getAvatarDrawable(usuario?.avatar)),
                                 contentDescription = "Foto de perfil genérica",
                                 modifier = Modifier.size(avatarSize * 0.58f)
                             )
@@ -335,6 +341,16 @@ fun HomeScreen(
                             color = textColorSecondary,
                             style = MaterialTheme.typography.bodyMedium.copy(fontSize = subtitleSize)
                         )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        TextButton(onClick = onEditProfile) {
+                            Text(
+                                text = "Editar perfil",
+                                color = PrimaryBlue,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            )
+                        }
                     }
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -566,3 +582,10 @@ data class AchievementUi (
     val iconRes: Int,
     val desbloqueado: Boolean
 )
+private fun getAvatarDrawable(avatar: String?): Int {
+    return when (avatar) {
+        "profile_user_2" -> R.drawable.profile_user_2
+        "profile_user_3" -> R.drawable.profile_user_3
+        else -> R.drawable.profile_user
+    }
+}

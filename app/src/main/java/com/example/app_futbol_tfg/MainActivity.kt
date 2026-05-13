@@ -38,12 +38,14 @@ import com.example.app_futbol_tfg.ui.viewmodels.LoginViewModel
 import com.example.app_futbol_tfg.ui.viewmodels.RegisterViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import com.example.app_futbol_tfg.ui.screens.editprofile.EditProfileScreen
 
 sealed interface AppScreen {
     data object Splash : AppScreen
     data object Login : AppScreen
     data object Register : AppScreen
     data object Home : AppScreen
+    data object EditProfile : AppScreen
     data object AddMatch : AppScreen
     data object Stats : AppScreen
     data object Map : AppScreen
@@ -112,6 +114,7 @@ fun MainContent(
                 sessionManager = sessionManager,
                 loginViewModel = loginViewModel,
                 registerViewModel = registerViewModel,
+                isDarkMode = isDarkMode,
                 onToggleDarkMode = {
                     isDarkMode = !isDarkMode
                     sessionManager.setDarkMode(isDarkMode)
@@ -127,6 +130,7 @@ fun TfgApp(
     sessionManager: SessionManager,
     loginViewModel: LoginViewModel,
     registerViewModel: RegisterViewModel,
+    isDarkMode: Boolean,
     onToggleDarkMode: () -> Unit
 ) {
     var currentScreen by remember { mutableStateOf<AppScreen>(AppScreen.Splash) }
@@ -180,7 +184,18 @@ fun TfgApp(
             },
             onOpenTotalMatches = { currentScreen = AppScreen.TotalMatches },
             onLogout = onLogout,
-            onToggleDarkMode = onToggleDarkMode
+            onToggleDarkMode = onToggleDarkMode,
+            onEditProfile = {
+                currentScreen = AppScreen.EditProfile
+            },
+            isDarkMode = isDarkMode
+        )
+        AppScreen.EditProfile -> EditProfileScreen(
+            userId = currentUserId,
+            db = db,
+            onBack = {
+                currentScreen = AppScreen.Home
+            }
         )
         AppScreen.AddMatch -> AddMatchScreen(
             db = db,

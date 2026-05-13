@@ -23,5 +23,7 @@ data class UsuarioEntity(
     val passwordHash: String,
     @ColumnInfo(name = "fecha_registro")
     val fechaRegistro: String,
-    val rol: String = "usuario"
+    val rol: String = "usuario",
+    @ColumnInfo(name = "avatar")
+    val avatar: String = "perfil_usuario"
 )
