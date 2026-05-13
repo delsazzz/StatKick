@@ -35,7 +35,7 @@ object SeedData {
         seedPartidoJugadores1(database, ids)
         seedPartidoJugadores2(database, ids)
         seedPartidoJugadores3(database, ids)
-        seedUsuariosYLogros(database, ids)
+        seedLogros(database)
     }
 
     // Esta es una estructura auxiliar que almacena los identificadores generados
@@ -512,24 +512,18 @@ object SeedData {
         dao.insert(PartidoJugadorEntity(idPartido = ids.idPartido54, idJugador = ids.idMbappe,       idEquipo = ids.idPSG,             titular = true,  minutosJugados = 90, goles = 1, asistencias = 0, amarillas = 0, rojas = 0))
         dao.insert(PartidoJugadorEntity(idPartido = ids.idPartido54, idJugador = ids.idRamosPSG,     idEquipo = ids.idPSG,             titular = false, minutosJugados = 23, goles = 1, asistencias = 0, amarillas = 0, rojas = 0))
     }
-    private suspend fun seedUsuariosYLogros(database: AppDatabase, ids: SeedIds) {
-        val usuarioDao      = database.usuarioDao()
-        val logroDao        = database.logroDao()
-        val usuarioPartidoDao = database.usuarioPartidoDao()
+    private suspend fun seedLogros(database: AppDatabase) {
+        val logroDao = database.logroDao()
 
-        val idAdmin = usuarioDao.insert(UsuarioEntity(nombreUsuario = "admin",        email = "admin@futbol.com", passwordHash = "hash_admin_123", fechaRegistro = "2026-03-18", rol = "admin")).toInt()
-        val idDemo  = usuarioDao.insert(UsuarioEntity(nombreUsuario = "usuario_demo", email = "demo@futbol.com",  passwordHash = "hash_demo_123",  fechaRegistro = "2026-03-18", rol = "usuario")).toInt()
-
-        val idLogro1 = logroDao.insertLogro(LogroEntity(nombre = "Primer partido guardado", descripcion = "Has guardado tu primer partido")).toInt()
-        val idLogro2 = logroDao.insertLogro(LogroEntity(nombre = "Fan del fútbol",          descripcion = "Has consultado varios partidos")).toInt()
-        val idLogro3 = logroDao.insertLogro(LogroEntity(nombre = "Coleccionista",            descripcion = "Has guardado más de un partido")).toInt()
-
-        logroDao.asignarLogro(UsuarioLogroEntity(idUsuario = idDemo,  idLogro = idLogro1, fechaObtenido = "2026-03-18"))
-        logroDao.asignarLogro(UsuarioLogroEntity(idUsuario = idDemo,  idLogro = idLogro2, fechaObtenido = "2026-03-18"))
-        logroDao.asignarLogro(UsuarioLogroEntity(idUsuario = idAdmin, idLogro = idLogro3, fechaObtenido = "2026-03-18"))
-
-        usuarioPartidoDao.insert(UsuarioPartidoEntity(idUsuario = idDemo,  idPartido = ids.idPartido1, fechaRegistro = "2026-03-18"))
-        usuarioPartidoDao.insert(UsuarioPartidoEntity(idUsuario = idDemo,  idPartido = ids.idPartido3, fechaRegistro = "2026-03-18"))
-        usuarioPartidoDao.insert(UsuarioPartidoEntity(idUsuario = idAdmin, idPartido = ids.idPartido2, fechaRegistro = "2026-03-18"))
+        logroDao.insertLogro(LogroEntity(id = 1, nombre = "Primer partido registrado", descripcion = "Has añadido tu primer partido a la aplicación."))
+        logroDao.insertLogro(LogroEntity(id = 2, nombre = "Aficionado en marcha", descripcion = "Has registrado al menos 5 partidos."))
+        logroDao.insertLogro(LogroEntity(id = 3, nombre = "Veterano de grada", descripcion = "Has registrado al menos 10 partidos."))
+        logroDao.insertLogro(LogroEntity(id = 4, nombre = "Fan del gol", descripcion = "Has visto al menos 25 goles."))
+        logroDao.insertLogro(LogroEntity(id = 5, nombre = "Lluvia de goles", descripcion = "Has visto al menos 50 goles."))
+        logroDao.insertLogro(LogroEntity(id = 6, nombre = "Coleccionista de equipos", descripcion = "Has visto al menos 5 equipos diferentes."))
+        logroDao.insertLogro(LogroEntity(id = 7, nombre = "Plantilla conocida", descripcion = "Has visto al menos 10 jugadores diferentes."))
+        logroDao.insertLogro(LogroEntity(id = 8, nombre = "Explorador de estadios", descripcion = "Has visitado al menos 3 estadios diferentes."))
+        logroDao.insertLogro(LogroEntity(id = 9, nombre = "Ruta internacional", descripcion = "Has registrado partidos de varias competiciones."))
+        logroDao.insertLogro(LogroEntity(id = 10, nombre = "Partido igualado", descripcion = "Has visto al menos un empate."))
     }
 }

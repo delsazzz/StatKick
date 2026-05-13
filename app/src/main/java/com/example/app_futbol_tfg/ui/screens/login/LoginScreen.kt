@@ -40,6 +40,11 @@ import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
 import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
 import com.example.app_futbol_tfg.ui.viewmodels.LoginUiState
 import com.example.app_futbol_tfg.ui.viewmodels.LoginViewModel
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import com.example.app_futbol_tfg.R
 
 @Composable
 fun LoginScreen(
@@ -67,14 +72,15 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(
-            text = "⚽",
-            fontSize = 64.sp,
-            textAlign = TextAlign.Center
+        Image(
+            painter = painterResource(id = R.drawable.logo_app),
+            contentDescription = "Logo de StatKick",
+            modifier = Modifier.size(170.dp),
+            contentScale = ContentScale.Crop
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        //Spacer(modifier = Modifier.height(2.dp))
         Text(
-            text = "FútbolTracker",
+            text = "StatKick",
             color = PrimaryBlue,
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.Bold

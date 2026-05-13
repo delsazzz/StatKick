@@ -77,7 +77,7 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val apiRepo = ApiFootballRepositoryProvider.getInstance(db)
-                initializeAppData(apiRepo, BuildConfig.API_FOOTBALL_KEY)
+                initializeAppData(apiRepo, BuildConfig.API_FOOTBALL_KEY, db)
             } catch (e: Exception) {
                 Log.e("MainActivity", "Error en carga inicial", e)
             }

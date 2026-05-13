@@ -392,7 +392,7 @@ private fun TeamMiniCard(
             ) {
                 Text(
                     text = item.name,
-                    color = TextPrimary,
+                    color = appColors.textPrimary,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -458,32 +458,18 @@ private fun PlayerMiniStatCard(
                     )
                 )
             }
-            Column(
-                modifier = Modifier.height(38.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                Text(
-                    text = item.nombre,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = TextPrimary,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontWeight = FontWeight.SemiBold
-                    )
+            Text(
+                text = "${item.nombre} ${item.apellido}",
+                modifier = Modifier.height(42.dp),
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                color = appColors.textPrimary,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    lineHeight = 14.sp
                 )
-                Text(
-                    text = item.apellido,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = TextPrimary,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontWeight = FontWeight.Medium
-                    )
-                )
-            }
+            )
         }
     }
 }
@@ -520,7 +506,7 @@ private fun StadiumMiniCard(
             ) {
                 Text(
                     text = item.name,
-                    color = TextPrimary,
+                    color = appColors.textPrimary,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
