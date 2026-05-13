@@ -86,7 +86,9 @@ fun MapScreen(onNavigateBottom: (Int) -> Unit) {
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     Column(
-                        modifier = Modifier.fillMaxWidth().padding(18.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
@@ -106,7 +108,9 @@ fun MapScreen(onNavigateBottom: (Int) -> Unit) {
                 }
 
                 Card(
-                    modifier = Modifier.fillMaxWidth().height(mapHeight),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(mapHeight),
                     shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(containerColor = appColors.card),
                     elevation = CardDefaults.cardElevation(defaultElevation = 5.dp)
@@ -151,23 +155,33 @@ fun MapScreen(onNavigateBottom: (Int) -> Unit) {
                                 .background(Color.White.copy(alpha = 0.7f))
                         )
                         FakeMapPin(
-                            modifier = Modifier.align(Alignment.TopStart).offset(x = 50.dp, y = 60.dp),
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .offset(x = 50.dp, y = 60.dp),
                             pinSize = pinSize, title = "Bernabéu"
                         )
                         FakeMapPin(
-                            modifier = Modifier.align(Alignment.CenterStart).offset(x = 95.dp, y = 25.dp),
+                            modifier = Modifier
+                                .align(Alignment.CenterStart)
+                                .offset(x = 95.dp, y = 25.dp),
                             pinSize = pinSize, title = "Coliseum"
                         )
                         FakeMapPin(
-                            modifier = Modifier.align(Alignment.BottomStart).offset(x = 130.dp, y = (-70).dp),
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .offset(x = 130.dp, y = (-70).dp),
                             pinSize = pinSize, title = "Metropolitano"
                         )
                         FakeMapPin(
-                            modifier = Modifier.align(Alignment.TopEnd).offset(x = (-70).dp, y = 90.dp),
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .offset(x = (-70).dp, y = 90.dp),
                             pinSize = pinSize, title = "Camp Nou"
                         )
                         FakeMapPin(
-                            modifier = Modifier.align(Alignment.BottomEnd).offset(x = (-90).dp, y = (-90).dp),
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .offset(x = (-90).dp, y = (-90).dp),
                             pinSize = pinSize, title = "Mestalla"
                         )
                         Text(
@@ -194,7 +208,9 @@ fun MapScreen(onNavigateBottom: (Int) -> Unit) {
                     elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                 ) {
                     Column(
-                        modifier = Modifier.fillMaxWidth().padding(18.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
@@ -257,10 +273,16 @@ private fun MapSummaryCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(18.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text(text = title, color = appColors.textSecondary, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = title,
+                color = appColors.textSecondary,
+                style = MaterialTheme.typography.bodyMedium
+            )
             Text(
                 text = value,
                 color = PrimaryBlue,
@@ -281,6 +303,10 @@ private fun LegendItem(text: String) {
                 .background(PrimaryBlue)
         )
         Spacer(modifier = Modifier.width(10.dp))
-        Text(text = text, color = appColors.textSecondary, style = MaterialTheme.typography.bodyMedium)
+        Text(
+            text = text,
+            color = appColors.textSecondary,
+            style = MaterialTheme.typography.bodyMedium
+        )
     }
 }

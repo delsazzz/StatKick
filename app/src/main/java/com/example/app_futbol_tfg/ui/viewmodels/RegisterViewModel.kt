@@ -28,6 +28,37 @@ class RegisterViewModel(private val authRepository: AuthRepository) : ViewModel(
     // Intenta registrar un nuevo usuario con los datos introducidos
     fun register(nombreUsuario: String, email: String, password: String, confirmPassword: String) {
         // Validaciones antes de llamar al repositorio
+        // Validaciones del nombre de usuario
+        if (nombreUsuario.isBlank()) {
+            _uiState.value = RegisterUiState.Error("El nombre de usuario no puede estar vacío")
+            return
+        }
+        if (nombreUsuario.length < 3) {
+            _uiState.value = RegisterUiState.Error("El nombre de usuario debe tener al menos 3 caracteres")
+            return
+        }
+        if (nombreUsuario.length > 20) {
+            _uiState.value = RegisterUiState.Error("El nombre de usuario no puede tener más de 20 caracteres")
+            return
+        }
+        if (!nombreUsuario.matches(Regex("^[a-zA-Z0-9_]+$"))) {
+            _uiState.value = RegisterUiState.Error("El nombre de usuario solo puede contener letras, números y guiones bajos")
+            return
+        }
+
+// Validaciones del email
+        if (email.isBlank()) {
+            _uiState.value = RegisterUiState.Error("El email no puede estar vacío")
+            return
+        }
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            _uiState.value = RegisterUiState.Error("El formato del email no es válido")
+            return
+        }
+        if (email.length > 100) {
+            _uiState.value = RegisterUiState.Error("El email no puede tener más de 100 caracteres")
+            return
+        }
         if (password.isBlank()) {
             _uiState.value = RegisterUiState.Error("La contraseña no puede estar vacía")
             return
