@@ -25,6 +25,7 @@ class EquipoRepository(
             null
         }
 
+    fun getByEstadio(idEstadio: Int): Flow<List<EquipoEntity>> = equipoDao.getByEstadio(idEstadio)
     fun getByPais(idPais: Int): Flow<List<EquipoEntity>> = equipoDao.getByPais(idPais)
     fun getSinPais(): Flow<List<EquipoEntity>> = equipoDao.getSinPais()
     suspend fun insertEquipo(equipo: EquipoEntity): Long =

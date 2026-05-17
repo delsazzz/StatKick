@@ -238,7 +238,8 @@ fun TfgApp(
                     2 -> AppScreen.Stats
                     else -> AppScreen.Map
                 }
-            }
+            },
+            userId = currentUserId
         )
         is AppScreen.MatchDetail -> MatchDetailScreen(
             matchId = screen.matchId,

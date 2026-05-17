@@ -82,4 +82,6 @@ dependencies {
     implementation("com.google.code.gson:gson:2.13.2")
     // Coil - librería para cargar imágenes desde URL en Jetpack Compose
     implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.maps.android:maps-compose:4.3.3")
 }

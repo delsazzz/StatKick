@@ -19,6 +19,13 @@ interface EstadioDao {
     fun getByPais(idPais: Int): Flow<List<EstadioEntity>>
     @Query("SELECT * FROM Estadios WHERE id_localidad = :idLocalidad ORDER BY nombre")
     fun getByLocalidad(idLocalidad: Int): Flow<List<EstadioEntity>>
+
+    @Query("""
+    UPDATE Estadios 
+    SET latitud = :latitud, longitud = :longitud, direccion = :direccion 
+    WHERE nombre = :nombre
+""")
+    suspend fun updateCoordenadas(nombre: String, latitud: Double, longitud: Double, direccion: String?)
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(estadio: EstadioEntity): Long
     @Update

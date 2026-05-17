@@ -25,7 +25,7 @@ private const val TAG = "ApiFootballRepository"
 // y la UI siempre lee desde Room.
 class ApiFootballRepository(
     private val api: ApiFootballService,
-    private val db: AppDatabase
+    val db: AppDatabase
 ) {
 
     // Obtiene los partidos de una liga y temporada desde la API

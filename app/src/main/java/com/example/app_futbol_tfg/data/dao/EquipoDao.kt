@@ -19,6 +19,9 @@ interface EquipoDao {
     fun getByPais(idPais: Int): Flow<List<EquipoEntity>>
     @Query("SELECT * FROM Equipos WHERE id_pais IS NULL ORDER BY nombre")
     fun getSinPais(): Flow<List<EquipoEntity>>
+
+    @Query("SELECT * FROM Equipos WHERE id_estadio = :idEstadio")
+    fun getByEstadio(idEstadio: Int): Flow<List<EquipoEntity>>
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(equipo: EquipoEntity): Long
     @Update

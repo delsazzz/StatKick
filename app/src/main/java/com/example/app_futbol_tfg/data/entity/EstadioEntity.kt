@@ -37,5 +37,13 @@ data class EstadioEntity(
     val idLocalidad: Int?,
     @ColumnInfo(name = "id_pais")
     val idPais: Int?,
-    val capacidad: Int?
+    val capacidad: Int?,
+
+    // ── Campos añadidos para el mapa ──────────────────────────────────────
+    // Coordenadas GPS del estadio — nullable porque pueden no estar disponibles
+    val latitud: Double? = null,
+    val longitud: Double? = null,
+
+    // Dirección postal del estadio (opcional)
+    val direccion: String? = null
 )
