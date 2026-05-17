@@ -79,10 +79,11 @@ import java.util.Date
 import java.util.Locale
 import com.example.app_futbol_tfg.BuildConfig
 import com.example.app_futbol_tfg.data.repository.ApiFootballRepositoryProvider
-
+import com.example.app_futbol_tfg.ui.ui.theme.LocalAppColors
 private const val TAG = "MatchDetailScreen"
 @Composable
 fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> Unit) {
+    val appColors = LocalAppColors.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val apiRepo = remember { ApiFootballRepositoryProvider.getInstance(db) }
@@ -111,18 +112,18 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                     onBackClick = onBack
                 )
             },
-            containerColor = BackgroundLight
+            containerColor = appColors.background
         ) { innerPadding ->
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .background(BackgroundLight),
+                    .background(appColors.background),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "Cargando partido...",
-                    color = TextSecondary,
+                    color = appColors.textSecondary,
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
@@ -216,13 +217,13 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
             )
         },
         // Esta pantalla NO lleva barra inferior
-        containerColor = BackgroundLight
+        containerColor = appColors.background
     ) { innerPadding ->
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(BackgroundLight)
+                .background(appColors.background)
                 .safeDrawingPadding()
         ) {
             // Ajustes adaptativos para distintos tamaños de pantalla
@@ -302,14 +303,14 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                 ) {
                     Text(
                         text = "Jugadores participantes",
-                        color = TextPrimary,
+                        color = appColors.textPrimary,
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.SemiBold
                         )
                     )
                     Text(
                         text = equipoLocal?.nombre ?: "Equipo local",
-                        color = TextSecondary,
+                        color = appColors.textSecondary,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.SemiBold
                         )
@@ -331,7 +332,7 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                     }
                     Text(
                         text = equipoVisitante?.nombre ?: "Equipo visitante",
-                        color = TextSecondary,
+                        color = appColors.textSecondary,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.SemiBold
                         )
@@ -461,10 +462,11 @@ private fun MatchSummaryCard(
     scoreSize: androidx.compose.ui.unit.TextUnit,
     teamNameSize: androidx.compose.ui.unit.TextUnit
 ) {
+    val appColors = LocalAppColors.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = CardBackground),
+        colors = CardDefaults.cardColors(containerColor = appColors.card),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Column(
@@ -494,7 +496,7 @@ private fun MatchSummaryCard(
                         text = equipoLocalNombre,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        color = TextPrimary,
+                        color = appColors.textPrimary,
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.bodyLarge.copy(
                             fontSize = teamNameSize,
@@ -526,7 +528,7 @@ private fun MatchSummaryCard(
                         text = equipoVisitanteNombre,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        color = TextPrimary,
+                        color = appColors.textPrimary,
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.bodyLarge.copy(
                             fontSize = teamNameSize,
@@ -549,10 +551,11 @@ private fun MatchInfoCard(
     localidad: String,
     paisEstadio: String
 ) {
+    val appColors = LocalAppColors.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = CardBackground),
+        colors = CardDefaults.cardColors(containerColor = appColors.card),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
@@ -569,7 +572,7 @@ private fun MatchInfoCard(
             ) {
                 Text(
                     text = fecha,
-                    color = TextSecondary,
+                    color = appColors.textSecondary,
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center
                 )
@@ -578,7 +581,7 @@ private fun MatchInfoCard(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = temporada,
-                    color = TextSecondary,
+                    color = appColors.textSecondary,
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center
                 )
@@ -589,7 +592,7 @@ private fun MatchInfoCard(
                     text = competicion,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    color = TextSecondary,
+                    color = appColors.textSecondary,
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center
                 )
@@ -617,7 +620,7 @@ private fun MatchInfoCard(
                     text = estadio,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    color = TextPrimary,
+                    color = appColors.textPrimary,
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.SemiBold
@@ -630,7 +633,7 @@ private fun MatchInfoCard(
                     text = "$localidad ($paisEstadio)",
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    color = TextSecondary,
+                    color = appColors.textSecondary,
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center
                 )
@@ -662,12 +665,13 @@ private fun PlayerMiniCard(
     player: PlayerMatchUi,
     avatarSize: Dp
 ) {
+    val appColors = LocalAppColors.current
     Card(
         modifier = Modifier
             .width(120.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = CardBackground
+            containerColor = appColors.card
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
@@ -712,7 +716,7 @@ private fun PlayerMiniCard(
                         text = player.nombre,
                         textAlign = TextAlign.Center,
                         maxLines = 1,
-                        color = TextPrimary,
+                        color = appColors.textPrimary,
                         style = MaterialTheme.typography.bodySmall.copy(
                             fontWeight = FontWeight.SemiBold
                         )
@@ -721,7 +725,7 @@ private fun PlayerMiniCard(
                         text = player.apellido,
                         textAlign = TextAlign.Center,
                         maxLines = 1,
-                        color = TextPrimary,
+                        color = appColors.textPrimary,
                         style = MaterialTheme.typography.bodySmall.copy(
                             fontWeight = FontWeight.Medium
                         )
@@ -759,9 +763,10 @@ private fun getApellidoJugador(
 }
 @Composable
 private fun DotSeparator() {
+    val appColors = LocalAppColors.current
     Text(
         text = "•",
-        color = TextSecondary,
+        color = appColors.textSecondary,
         style = MaterialTheme.typography.bodySmall
     )
 }

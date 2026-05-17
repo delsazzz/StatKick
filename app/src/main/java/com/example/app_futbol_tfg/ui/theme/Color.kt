@@ -30,3 +30,4 @@ val BackgroundDarkReal = Color(0xFF0F172A)      // fondo oscuro azul marino
 val CardBackgroundDark = Color(0xFF1E293B)      // cards oscuras
 val TextPrimaryDark = Color(0xFFF1F5F9)         // texto claro
 val TextSecondaryDark = Color(0xFF94A3B8)       // texto secundario claro
+val TextThirdDark = Color(0xFF2563EB) // texto buscador oscuro

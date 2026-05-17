@@ -21,6 +21,10 @@ interface UsuarioDao {
     fun getByIdFlow(id: Int): Flow<UsuarioEntity?>
     // En este caso ABORT hace que si hay conflicto con una restricción en la base de datos
     // es decir un email o nombre de usuario repetido la operación se cancela y se lanza una excepción
+    @Query("""SELECT EXISTS(SELECT 1 FROM Usuarios WHERE nombre_usuario = :nombreUsuario AND id != :userId)""")
+    suspend fun existeNombreUsuarioEnOtroUsuario(nombreUsuario: String, userId: Int): Boolean
+    @Query("""UPDATE Usuarios SET nombre_usuario = :nuevoNombre, avatar = :nuevoAvatar WHERE id = :userId""")
+    suspend fun actualizarPerfil(userId: Int, nuevoNombre: String, nuevoAvatar: String)
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(usuario: UsuarioEntity): Long
     @Update

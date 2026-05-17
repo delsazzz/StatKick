@@ -259,8 +259,8 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                         focusedLabelColor = PrimaryBlue,
                         unfocusedLabelColor = appColors.textSecondary,
                         cursorColor = PrimaryBlue,
-                        focusedTextColor = appColors.textPrimary,
-                        unfocusedTextColor = appColors.textPrimary,
+                        focusedTextColor = appColors.textThird,
+                        unfocusedTextColor = appColors.textThird,
                         focusedContainerColor = Color.White,
                         unfocusedContainerColor = Color.White
                     )
@@ -378,7 +378,7 @@ private fun SuggestionsDropdown(suggestions: List<SearchSuggestionUi>, onSuggest
                             is SearchSuggestionUi.Team -> suggestion.name
                             is SearchSuggestionUi.Competition -> suggestion.name
                         },
-                        color = appColors.textPrimary,
+                        color = appColors.textThird,
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }

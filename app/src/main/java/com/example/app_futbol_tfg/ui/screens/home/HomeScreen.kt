@@ -1,6 +1,5 @@
 package com.example.app_futbol_tfg.ui.screens.home
 
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -29,6 +29,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -52,6 +53,13 @@ import com.example.app_futbol_tfg.ui.components.AppBottomBar
 import com.example.app_futbol_tfg.ui.components.AppTopBar
 import com.example.app_futbol_tfg.ui.ui.theme.LocalAppColors
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.text.style.TextAlign
+import com.example.app_futbol_tfg.data.entity.UsuarioLogroEntity
+import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun HomeScreen(
@@ -60,7 +68,9 @@ fun HomeScreen(
     onNavigateBottom: (Int) -> Unit,
     onOpenTotalMatches: () -> Unit,
     onLogout: () -> Unit,
-    onToggleDarkMode: () -> Unit
+    onToggleDarkMode: () -> Unit,
+    onEditProfile: () -> Unit,
+    isDarkMode: Boolean
 ) {
     val appColors = LocalAppColors.current
     val backgroundColor = appColors.background
@@ -68,12 +78,13 @@ fun HomeScreen(
     val textColorPrimary = appColors.textPrimary
     val textColorSecondary = appColors.textSecondary
 
-    val partidosVistos by db.usuarioPartidoDao()
-        .getPartidosByUsuario(userId)
-        .collectAsState(initial = emptyList())
+    val partidosVistos by db.usuarioPartidoDao().getPartidosByUsuario(userId).collectAsState(initial = emptyList())
     val equipos by db.equipoDao().getAll().collectAsState(initial = emptyList())
     val jugadores by db.jugadorDao().getAll().collectAsState(initial = emptyList())
     val usuario by db.usuarioDao().getByIdFlow(userId).collectAsState(initial = null)
+    val usuarioLogrosState = db.usuarioLogroDao().getByUsuario(userId).collectAsState(initial = null)
+    val usuarioLogros = usuarioLogrosState.value
+    val unlockedAchievementIds = usuarioLogros?.map { it.idLogro }?.toSet() ?: emptySet()
 
     val equiposMap = equipos.associateBy { it.id }
     val jugadoresMap = jugadores.associateBy { it.id }
@@ -94,6 +105,7 @@ fun HomeScreen(
     val matchIds = partidosVistos.map { it.id }
     val playerCounter = mutableMapOf<Int, Int>()
     var menuExpanded by remember { mutableStateOf(false) }
+    var achievementPopup by remember { mutableStateOf<AchievementUi?>(null) }
 
     val partidoJugadores by if (matchIds.isNotEmpty()) {
         db.partidoJugadorDao().getByPartidos(matchIds).collectAsState(initial = emptyList())
@@ -111,6 +123,109 @@ fun HomeScreen(
         listOfNotNull(jugador?.nombre, jugador?.apellido1).joinToString(" ")
     } ?: "-"
 
+    val totalEquiposVistos = teamCounter.keys.size
+    val totalJugadoresVistos = playerCounter.keys.size
+    val totalEstadiosVistos = partidosVistos.mapNotNull { it.idEstadio }.distinct().size
+    val totalCompeticionesVistas = partidosVistos.mapNotNull { it.idCompeticion }.distinct().size
+    val totalVictoriasLocales = partidosVistos.count { it.golesLocal > it.golesVisitante }
+    val totalEmpates = partidosVistos.count { it.golesLocal == it.golesVisitante }
+
+    val achievements = listOf(
+        AchievementUi(
+            id = 1,
+            titulo = "Primer partido registrado",
+            descripcion = "Has añadido tu primer partido a la aplicación.",
+            iconRes = R.drawable.football_ball,
+            desbloqueado = totalPartidos >= 1
+        ),
+        AchievementUi(
+            id = 2,
+            titulo = "Aficionado en marcha",
+            descripcion = "Has registrado al menos 5 partidos.",
+            iconRes = R.drawable.football_ball,
+            desbloqueado = totalPartidos >= 5
+        ),
+        AchievementUi(
+            id = 3,
+            titulo = "Veterano de grada",
+            descripcion = "Has registrado al menos 10 partidos.",
+            iconRes = R.drawable.football_ball,
+            desbloqueado = totalPartidos >= 10
+        ),
+        AchievementUi(
+            id = 4,
+            titulo = "Fan del gol",
+            descripcion = "Has visto al menos 25 goles.",
+            iconRes = R.drawable.football_goal,
+            desbloqueado = totalGoles >= 25
+        ),
+        AchievementUi(
+            id = 5,
+            titulo = "Lluvia de goles",
+            descripcion = "Has visto al menos 50 goles.",
+            iconRes = R.drawable.football_goal,
+            desbloqueado = totalGoles >= 50
+        ),
+        AchievementUi(
+            id = 6,
+            titulo = "Coleccionista de equipos",
+            descripcion = "Has visto al menos 5 equipos diferentes.",
+            iconRes = R.drawable.logo_escudo,
+            desbloqueado = totalEquiposVistos >= 5
+        ),
+        AchievementUi(
+            id = 7,
+            titulo = "Plantilla conocida",
+            descripcion = "Has visto al menos 10 jugadores diferentes.",
+            iconRes = R.drawable.profile_user,
+            desbloqueado = totalJugadoresVistos >= 10
+        ),
+        AchievementUi(
+            id = 8,
+            titulo = "Explorador de estadios",
+            descripcion = "Has visitado al menos 3 estadios diferentes.",
+            iconRes = R.drawable.map_pin,
+            desbloqueado = totalEstadiosVistos >= 3
+        ),
+        AchievementUi(
+            id = 9,
+            titulo = "Ruta internacional",
+            descripcion = "Has registrado partidos de varias competiciones.",
+            iconRes = R.drawable.logo_trofeo,
+            desbloqueado = totalCompeticionesVistas >= 2
+        ),
+        AchievementUi(
+            id = 10,
+            titulo = "Partido igualado",
+            descripcion = "Has visto al menos un empate.",
+            iconRes = R.drawable.football_ball,
+            desbloqueado = totalEmpates >= 1
+        )
+    )
+    LaunchedEffect(achievements, usuarioLogros) {
+        if (usuarioLogros == null) return@LaunchedEffect
+        val nuevosLogros = achievements.filter { achievement ->
+            achievement.desbloqueado && achievement.id !in unlockedAchievementIds
+        }
+        nuevosLogros.forEach { achievement ->
+            val fechaActual = SimpleDateFormat(
+                "yyyy-MM-dd",
+                Locale.getDefault()
+            ).format(Date())
+            db.usuarioLogroDao().insert(
+                UsuarioLogroEntity(
+                    idUsuario = userId,
+                    idLogro = achievement.id,
+                    fechaObtenido = fechaActual
+                )
+            )
+            achievementPopup = achievement
+            delay(3500)
+            achievementPopup = null
+            delay(300)
+        }
+    }
+
     Scaffold(
         topBar = {
             AppTopBar(
@@ -124,7 +239,9 @@ fun HomeScreen(
                         onDismissRequest = { menuExpanded = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Modo oscuro") },
+                            text = {
+                                Text(
+                                    text = if (isDarkMode) "Modo Claro" else "Modo oscuro") },
                             onClick = {
                                 menuExpanded = false
                                 onToggleDarkMode()
@@ -132,7 +249,7 @@ fun HomeScreen(
                             leadingIcon = {
                                 Icon(
                                     painter = painterResource(id = R.drawable.settings_gear),
-                                    contentDescription = "Modo oscuro",
+                                    contentDescription =  if (isDarkMode) "Modo claro" else "Modo oscuro",
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -204,7 +321,7 @@ fun HomeScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Image(
-                                painter = painterResource(id = R.drawable.profile_user),
+                                painter = painterResource(id = getAvatarDrawable(usuario?.avatar)),
                                 contentDescription = "Foto de perfil genérica",
                                 modifier = Modifier.size(avatarSize * 0.58f)
                             )
@@ -224,9 +341,18 @@ fun HomeScreen(
                             color = textColorSecondary,
                             style = MaterialTheme.typography.bodyMedium.copy(fontSize = subtitleSize)
                         )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        TextButton(onClick = onEditProfile) {
+                            Text(
+                                text = "Editar perfil",
+                                color = PrimaryBlue,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            )
+                        }
                     }
                 }
-
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         text = "Resumen estadísticas",
@@ -279,41 +405,67 @@ fun HomeScreen(
                         )
                     }
                 }
-
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         text = "Logros",
                         color = textColorPrimary,
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold)
                     )
-                    AchievementCard(
-                        title = "Primer partido registrado",
-                        description = "Has añadido tu primer partido a la aplicación.",
-                        iconRes = R.drawable.football_ball,
-                        cardColor = cardColor,
-                        textColorPrimary = textColorPrimary,
-                        textColorSecondary = textColorSecondary
-                    )
-                    AchievementCard(
-                        title = "Fan del gol",
-                        description = "Has superado los 300 goles visualizados.",
-                        iconRes = R.drawable.football_goal,
-                        cardColor = cardColor,
-                        textColorPrimary = textColorPrimary,
-                        textColorSecondary = textColorSecondary
-                    )
-                    AchievementCard(
-                        title = "Explorador de estadios",
-                        description = "Ya tienes varios estadios guardados en el mapa.",
-                        iconRes = R.drawable.map_pin,
-                        cardColor = cardColor,
-                        textColorPrimary = textColorPrimary,
-                        textColorSecondary = textColorSecondary
-                    )
+                    achievements.forEach { achievement ->
+                        AchievementCard(
+                            title = achievement.titulo,
+                            description = achievement.descripcion,
+                            iconRes = achievement.iconRes,
+                            unlocked = achievement.id in unlockedAchievementIds,
+                            cardColor = cardColor,
+                            textColorPrimary = textColorPrimary,
+                            textColorSecondary = textColorSecondary
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
+    }
+    achievementPopup?.let { achievement ->
+        AlertDialog(
+            onDismissRequest = { achievementPopup = null },
+            title = {
+                Text("¡Logro desbloqueado!")
+            },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        painter = painterResource(id = achievement.iconRes),
+                        contentDescription = achievement.titulo,
+                        tint = PrimaryBlue,
+                        modifier = Modifier.size(48.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = achievement.titulo,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = achievement.descripcion,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { achievementPopup = null }) {
+                    Text("Genial")
+                }
+            }
+        )
     }
 }
 
@@ -374,10 +526,12 @@ private fun AchievementCard(
     title: String,
     description: String,
     iconRes: Int,
+    unlocked: Boolean,
     cardColor: Color,
     textColorPrimary: Color,
     textColorSecondary: Color
 ) {
+    val alpha = if (unlocked) 1f else 0.35f
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -398,7 +552,7 @@ private fun AchievementCard(
                 Icon(
                     painter = painterResource(id = iconRes),
                     contentDescription = title,
-                    tint = PrimaryBlue,
+                    tint = if (unlocked) PrimaryBlue else textColorSecondary,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -409,15 +563,29 @@ private fun AchievementCard(
             ) {
                 Text(
                     text = title,
-                    color = textColorPrimary,
+                    color = textColorPrimary.copy(alpha = alpha),
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
                 )
                 Text(
-                    text = description,
-                    color = textColorSecondary,
+                    text = if (unlocked) description else "Logro bloqueado",
+                    color = textColorSecondary.copy(alpha = alpha),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
         }
+    }
+}
+data class AchievementUi (
+    val id: Int,
+    val titulo: String,
+    val descripcion: String,
+    val iconRes: Int,
+    val desbloqueado: Boolean
+)
+private fun getAvatarDrawable(avatar: String?): Int {
+    return when (avatar) {
+        "profile_user_2" -> R.drawable.profile_user_2
+        "profile_user_3" -> R.drawable.profile_user_3
+        else -> R.drawable.profile_user
     }
 }

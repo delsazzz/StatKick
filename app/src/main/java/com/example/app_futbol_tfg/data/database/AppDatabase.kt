@@ -14,6 +14,7 @@ import com.example.app_futbol_tfg.data.dao.PartidoDao
 import com.example.app_futbol_tfg.data.dao.PartidoJugadorDao
 import com.example.app_futbol_tfg.data.dao.TemporadaDao
 import com.example.app_futbol_tfg.data.dao.UsuarioDao
+import com.example.app_futbol_tfg.data.dao.UsuarioLogroDao
 import com.example.app_futbol_tfg.data.dao.UsuarioPartidoDao
 import com.example.app_futbol_tfg.data.entity.ApiSyncEntity
 import com.example.app_futbol_tfg.data.entity.CompeticionEntity
@@ -50,7 +51,7 @@ import com.example.app_futbol_tfg.data.entity.UsuarioPartidoEntity
         ApiSyncEntity::class
     ],
     // La versión debe incrementarse cada vez que el esquema de la BBDD cambie
-    version = 4,
+    version = 5,
     // Este proyecto no exporta el esquema a ficheros JSON
     exportSchema = false
 )
@@ -64,6 +65,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun jugadorDao(): JugadorDao
     abstract fun localidadDao(): LocalidadDao
     abstract fun logroDao(): LogroDao
+    abstract fun usuarioLogroDao(): UsuarioLogroDao
     abstract fun paisDao(): PaisDao
     abstract fun partidoDao(): PartidoDao
     abstract fun partidoJugadorDao(): PartidoJugadorDao

@@ -40,10 +40,12 @@ import com.example.app_futbol_tfg.ui.ui.theme.BackgroundLight
 import com.example.app_futbol_tfg.ui.ui.theme.CardBackground
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
 import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
+import com.example.app_futbol_tfg.ui.ui.theme.LocalAppColors
 
 @Composable
 fun TotalMatchesScreen(userId: Int, db: AppDatabase, onBack: () -> Unit, onOpenMatchDetail: (Int) -> Unit) {
     val context = LocalContext.current
+    val appColors = LocalAppColors.current
     // Se recuperan los partidos guardados por el usuario y los datos auxiliares necesarios
     val partidos by db.usuarioPartidoDao().getPartidosByUsuario(userId)
         .collectAsState(initial = emptyList())
@@ -91,13 +93,13 @@ fun TotalMatchesScreen(userId: Int, db: AppDatabase, onBack: () -> Unit, onOpenM
                 onBackClick = onBack
             )
         },
-        containerColor = BackgroundLight
+        containerColor = appColors.background
     ) { innerPadding ->
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(BackgroundLight)
+                .background(appColors.background)
                 .safeDrawingPadding()
         ) {
             val isSmallScreen = maxWidth < 360.dp || maxHeight < 700.dp
@@ -118,7 +120,7 @@ fun TotalMatchesScreen(userId: Int, db: AppDatabase, onBack: () -> Unit, onOpenM
                 if (groupedMatches.isEmpty()) {
                     Text(
                         text = "Todavía no tienes partidos guardados.",
-                        color = TextPrimary,
+                        color = appColors.textPrimary,
                         style = MaterialTheme.typography.bodyLarge
                     )
                 } else {
@@ -160,12 +162,13 @@ private fun YearMatchesCard(
     cardPadding: Dp,
     onOpenMatchDetail: (Int) -> Unit
 ) {
+    val appColors = LocalAppColors.current
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onToggleExpanded() },
         colors = CardDefaults.cardColors(
-            containerColor = CardBackground
+            containerColor = appColors.card
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {

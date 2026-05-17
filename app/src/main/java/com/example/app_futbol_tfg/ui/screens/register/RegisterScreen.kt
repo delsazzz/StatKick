@@ -30,7 +30,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.app_futbol_tfg.ui.components.CustomTextField
 import com.example.app_futbol_tfg.ui.components.PasswordTextField
 import com.example.app_futbol_tfg.ui.components.PrimaryButton
@@ -38,6 +37,13 @@ import com.example.app_futbol_tfg.ui.ui.theme.LocalAppColors
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
 import com.example.app_futbol_tfg.ui.viewmodels.RegisterUiState
 import com.example.app_futbol_tfg.ui.viewmodels.RegisterViewModel
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import com.example.app_futbol_tfg.R
+import com.example.app_futbol_tfg.ui.ui.theme.BackgroundLight
+import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
 
 @Composable
 fun RegisterScreen(
@@ -62,20 +68,21 @@ fun RegisterScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(appColors.background)
+            .background(BackgroundLight)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(
-            text = "⚽",
-            fontSize = 64.sp,
-            textAlign = TextAlign.Center
+        Image(
+            painter = painterResource(id = R.drawable.logo_app),
+            contentDescription = "Logo de StatKick",
+            modifier = Modifier.size(170.dp),
+            contentScale = ContentScale.Fit
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "FútbolTracker",
+            text = "StatKick",
             color = PrimaryBlue,
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.Bold
@@ -104,7 +111,7 @@ fun RegisterScreen(
             ) {
                 Text(
                     text = "Crear cuenta",
-                    color = appColors.textPrimary,
+                    color = TextPrimary,
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold
                     )
