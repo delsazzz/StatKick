@@ -16,6 +16,8 @@ import java.util.Date
 import java.util.Locale
 import com.example.app_futbol_tfg.BuildConfig
 import com.example.app_futbol_tfg.data.entity.TemporadaEntity
+import com.example.app_futbol_tfg.data.entity.LocalidadEntity
+import com.example.app_futbol_tfg.data.entity.PaisEntity
 
 private const val TAG = "ApiFootballRepository"
 
@@ -87,14 +89,58 @@ class ApiFootballRepository(
             if (response.isSuccessful) {
                 val teams = response.body()?.response ?: emptyList()
                 teams.forEach { team ->
-                    team.toEstadioEntity()?.let { estadio ->
-                        db.estadioDao().insert(estadio)
+                    val nombrePais = team.team.country ?: team.venue?.country
+                    val paisEntity = nombrePais?.let { pais ->
+                        db.paisDao().getByNombre(pais)
+                            ?: run {
+                                val newPaisId = db.paisDao().insert(
+                                    com.example.app_futbol_tfg.data.entity.PaisEntity(
+                                        nombre = pais,
+                                        bandera = null
+                                    )
+                                ).toInt()
+                                com.example.app_futbol_tfg.data.entity.PaisEntity(
+                                    id = newPaisId,
+                                    nombre = pais,
+                                    bandera = null
+                                )
+                            }
                     }
-                    val paisEntity = team.venue?.country?.let { nombrePais ->
-                        db.paisDao().getByNombre(nombrePais)
+                    val localidadEntity = team.venue?.city?.let { nombreLocalidad ->
+                        paisEntity?.let { pais ->
+                            db.localidadDao().getByNombreAndPais(
+                                nombre = nombreLocalidad,
+                                idPais = pais.id
+                            )
+                        }
+                    }
+                    val idLocalidad = if (
+                        localidadEntity == null &&
+                        team.venue?.city != null &&
+                        paisEntity != null
+                    ) {
+                        db.localidadDao().insert(
+                            LocalidadEntity(
+                                nombre = team.venue.city,
+                                idPais = paisEntity.id
+                            )
+                        ).toInt()
+                    } else {
+                        localidadEntity?.id
+                    }
+                    team.toEstadioEntity()?.let { estadio ->
+                        db.estadioDao().insert(
+                            estadio.copy(
+                                idLocalidad = idLocalidad,
+                                idPais = paisEntity?.id
+                            )
+                        )
                     }
                     db.equipoDao().insert(
-                        team.toEquipoEntity().copy(idPais = paisEntity?.id)
+                        team.toEquipoEntity().copy(
+                            idPais = paisEntity?.id,
+                            idLocalidad = idLocalidad
+                        )
                     )
                 }
                 Log.d(TAG, "Equipos guardados en Room: ${teams.size}")

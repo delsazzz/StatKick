@@ -76,7 +76,8 @@ fun TotalMatchesScreen(userId: Int, db: AppDatabase, onBack: () -> Unit, onOpenM
             date = partido.fecha,
             season = temporada?.temporada ?: "Temporada",
             competition = competicion?.nombre ?: "Competición",
-            countryFlagUrl = pais?.bandera
+            logoCompetition = competicion?.logo,
+            competitionId = competicion?.id
         )
     }
     // Los partidos se agrupan por año a partir de la fecha y se ordenan de más reciente a más antiguo

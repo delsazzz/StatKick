@@ -99,8 +99,8 @@ fun PasswordTextField(
             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                 Icon(
                     painter = painterResource(
-                        id = if (passwordVisible) R.drawable.profile_user
-                        else R.drawable.profile_user
+                        id = if (passwordVisible) R.drawable.logo_ojo_tachado_contrasena
+                        else R.drawable.logo_ojo_contrasena
                     ),
                     contentDescription = if (passwordVisible) "Ocultar contraseña"
                     else "Mostrar contraseña",

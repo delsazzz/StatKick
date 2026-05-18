@@ -17,7 +17,7 @@ interface LogroDao {
     @Query("""SELECT l.* FROM Logros l INNER JOIN Usuario_Logro ul ON ul.id_logro = l.id
         WHERE ul.id_usuario = :idUsuario ORDER BY l.nombre""")
     fun getLogrosByUsuario(idUsuario: Int): Flow<List<LogroEntity>>
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertLogro(logro: LogroEntity): Long
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun asignarLogro(rel: UsuarioLogroEntity): Long

@@ -322,8 +322,11 @@ fun HomeScreen(
                         ) {
                             Image(
                                 painter = painterResource(id = getAvatarDrawable(usuario?.avatar)),
-                                contentDescription = "Foto de perfil genérica",
-                                modifier = Modifier.size(avatarSize * 0.58f)
+                                contentDescription = "Foto de perfil",
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
                             )
                         }
                         Spacer(modifier = Modifier.height(16.dp))
@@ -584,8 +587,9 @@ data class AchievementUi (
 )
 private fun getAvatarDrawable(avatar: String?): Int {
     return when (avatar) {
-        "profile_user_2" -> R.drawable.profile_user_2
-        "profile_user_3" -> R.drawable.profile_user_3
+        "profile_user_1" -> R.drawable.avatar_cristiano_ronaldo
+        "profile_user_2" -> R.drawable.avatar_messi
+        "profile_user_3" -> R.drawable.avatar_uche
         else -> R.drawable.profile_user
     }
 }

@@ -30,7 +30,7 @@ fun AppBottomBar(
     val appColors = LocalAppColors.current
 
     val items = listOf(
-        BottomNavItem("Inicio", R.drawable.profile_user),
+        BottomNavItem("Inicio", R.drawable.logo_centro_campo),
         BottomNavItem("Añadir", R.drawable.action_add),
         BottomNavItem("Stats", R.drawable.stats_chart),
         BottomNavItem("Mapa", R.drawable.map_pin)

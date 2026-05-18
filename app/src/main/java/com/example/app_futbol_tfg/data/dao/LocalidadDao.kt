@@ -17,6 +17,8 @@ interface LocalidadDao {
     suspend fun getById(id: Int): LocalidadEntity?
     @Query("SELECT * FROM Localidad ORDER BY nombre")
     fun getAll(): Flow<List<LocalidadEntity>>
+    @Query("""SELECT * FROM Localidad WHERE nombre = :nombre AND id_pais = :idPais LIMIT 1""")
+    suspend fun getByNombreAndPais(nombre: String, idPais: Int): LocalidadEntity?
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(localidad: LocalidadEntity): Long
     @Update

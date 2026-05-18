@@ -99,7 +99,7 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
         SearchSuggestionUi.Competition(
             id = competicion.id,
             name = competicion.nombre,
-            flagUrl = pais?.bandera
+            logoCompetition = competicion?.logo
         )
     }
     val selectedSuggestion: SearchSuggestionUi? = when (selectedSuggestionType) {
@@ -124,7 +124,8 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
             date = partido.fecha,
             season = temporada?.temporada ?: "Temporada",
             competition = competicion?.nombre ?: "Competición",
-            countryFlagUrl = pais?.bandera
+            logoCompetition = competicion?.logo,
+            competitionId = competicion?.id
         )
     }
     // Se normaliza el texto introducido en el buscador a minúsculas y sin espacios de más
@@ -365,7 +366,7 @@ private fun SuggestionsDropdown(suggestions: List<SearchSuggestionUi>, onSuggest
                         }
                         is SearchSuggestionUi.Competition -> {
                             ApiImage(
-                                url = suggestion.flagUrl,
+                                url = suggestion.logoCompetition,
                                 contentDescription = suggestion.name,
                                 modifier = Modifier.size(24.dp),
                                 contentScale = ContentScale.Fit
@@ -397,6 +398,6 @@ sealed class SearchSuggestionUi {
     data class Competition(
         val id: Int,
         val name: String,
-        val flagUrl: String?
+        val logoCompetition: String?
     ) : SearchSuggestionUi()
 }

@@ -17,7 +17,8 @@ data class TeamItem(
 data class TeamDetail(
     @SerializedName("id") val id: Int,
     @SerializedName("name") val name: String?,
-    @SerializedName("logo") val logo: String?
+    @SerializedName("logo") val logo: String?,
+    @SerializedName("country") val country: String?
 )
 
 // Detalle del estadio del equipo

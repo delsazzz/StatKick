@@ -291,7 +291,7 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                     fecha = partido.fecha,
                     temporada = temporadaFormateada,
                     competicion = competicion?.nombre ?: "Competición",
-                    banderaCompeticion = paisCompeticion?.bandera,
+                    logoCompeticion = competicion?.logo,
                     nombrePaisCompeticion = paisCompeticion?.nombre,
                     estadio = estadio?.nombre ?: "Estadio",
                     localidad = localidadEstadio?.nombre ?: "Localidad",
@@ -545,7 +545,7 @@ private fun MatchInfoCard(
     fecha: String,
     temporada: String,
     competicion: String,
-    banderaCompeticion: String?,
+    logoCompeticion: String?,
     nombrePaisCompeticion: String?,
     estadio: String,
     localidad: String,
@@ -598,7 +598,7 @@ private fun MatchInfoCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 ApiImage(
-                    url = banderaCompeticion,
+                    url = logoCompeticion,
                     contentDescription = nombrePaisCompeticion,
                     modifier = Modifier.size(18.dp),
                     contentScale = ContentScale.Crop

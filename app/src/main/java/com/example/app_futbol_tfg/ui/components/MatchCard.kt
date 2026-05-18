@@ -32,6 +32,10 @@ import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
 import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
 import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
 import com.example.app_futbol_tfg.ui.ui.theme.LocalAppColors
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.draw.alpha
+import com.example.app_futbol_tfg.R
+
 
 //  Modelo visual temporal para la maqueta de partidos sugeridos.
 data class MatchSuggestionUi(
@@ -44,7 +48,8 @@ data class MatchSuggestionUi(
     val date: String,
     val season: String,
     val competition: String,
-    val countryFlagUrl: String?
+    val logoCompetition: String?,
+    val competitionId: Int?
 )
 // Card reutilizable de un partido sugerido.
 //@SuppressLint("NotConstructor")
@@ -68,13 +73,28 @@ fun MatchCard(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(cardPadding),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+        Box(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            // Fila principal del partido
+            val backgroundRes = getCompetitionBackground(match.competitionId)
+
+            if (backgroundRes != null) {
+                Image(
+                    painter = painterResource(id = backgroundRes),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .matchParentSize()
+                        .alpha(0.10f),
+                    contentScale = ContentScale.Crop
+                )
+            }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(cardPadding),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                // Fila principal del partido
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -136,44 +156,45 @@ fun MatchCard(
                 // Segunda fila con información adicional del partido
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
                 ) {
                     Text(
                         text = match.date,
                         color = appColors.textSecondary,
                         style = MaterialTheme.typography.bodySmall
                     )
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     DotSeparator()
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+
                     Text(
                         text = match.season,
                         color = appColors.textSecondary,
                         style = MaterialTheme.typography.bodySmall
                     )
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     DotSeparator()
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = match.competition,
-                        modifier = Modifier.weight(1f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         color = appColors.textSecondary,
                         style = MaterialTheme.typography.bodySmall
                     )
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     ApiImage(
-                        url = match.countryFlagUrl,
-                        contentDescription = "País  de la competición",
-                        modifier = Modifier.size(18.dp),
-                        contentScale = ContentScale.Crop
+                        url = match.logoCompetition,
+                        contentDescription = "Logo de la competición",
+                        modifier = Modifier.size(16.dp),
+                        contentScale = ContentScale.Fit
                     )
                 }
             }
         }
     }
-    // Separador entre texto con forma de punto ·
+}
     @Composable
     private fun DotSeparator() {
         val appColors = LocalAppColors.current
@@ -182,4 +203,12 @@ fun MatchCard(
             color = appColors.textSecondary,
             style = MaterialTheme.typography.bodySmall
         )
+    }
+
+    private fun getCompetitionBackground(competitionId: Int?): Int? {
+        return when (competitionId) {
+            140 -> R.drawable.fondo_laliga
+            2 -> R.drawable.fondo_champions_league
+            else -> null
+        }
     }

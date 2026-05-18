@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -23,6 +24,8 @@ import com.example.app_futbol_tfg.ui.components.PrimaryButton
 import com.example.app_futbol_tfg.ui.ui.theme.LocalAppColors
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 
 @Composable
 fun EditProfileScreen(
@@ -48,8 +51,9 @@ fun EditProfileScreen(
 
     val avatarOptions = listOf(
         "profile_user" to R.drawable.profile_user,
-        "profile_user_2" to R.drawable.profile_user_2,
-        "profile_user_3" to R.drawable.profile_user_3
+        "profile_user_1" to R.drawable.avatar_cristiano_ronaldo,
+        "profile_user_2" to R.drawable.avatar_messi,
+        "profile_user_3" to R.drawable.avatar_uche
     )
 
     Scaffold(
@@ -93,6 +97,9 @@ fun EditProfileScreen(
                     )
 
                     Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -115,7 +122,10 @@ fun EditProfileScreen(
                                 Image(
                                     painter = painterResource(id = avatar.second),
                                     contentDescription = avatar.first,
-                                    modifier = Modifier.size(46.dp)
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop
                                 )
                             }
                         }
