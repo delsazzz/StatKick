@@ -279,6 +279,7 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                     equipoVisitanteNombre = equipoVisitante?.nombre ?: "Visitante",
                     equipoLocalEscudo = equipoLocal?.escudo,
                     equipoVisitanteEscudo = equipoVisitante?.escudo,
+                    competitionId = competicion?.id,
                     crestSize = crestSize,
                     scoreSize = scoreSize,
                     teamNameSize = teamNameSize
@@ -458,6 +459,7 @@ private fun MatchSummaryCard(
     equipoVisitanteNombre: String,
     equipoLocalEscudo: String?,
     equipoVisitanteEscudo: String?,
+    competitionId: Int?,
     crestSize: Dp,
     scoreSize: androidx.compose.ui.unit.TextUnit,
     teamNameSize: androidx.compose.ui.unit.TextUnit
@@ -469,15 +471,29 @@ private fun MatchSummaryCard(
         colors = CardDefaults.cardColors(containerColor = appColors.card),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 24.dp, horizontal = 18.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+                .height(170.dp)
         ) {
+            val backgroundRes = when (competitionId) {
+                2 -> R.drawable.fondo_champions_league
+                140 -> R.drawable.fondo_laliga
+                else -> null
+            }
+            backgroundRes?.let {
+                Image(
+                    painter = painterResource(id = it),
+                    contentDescription = null,
+                    modifier = Modifier.matchParentSize(),
+                    contentScale = ContentScale.Crop,
+                    alpha = 0.10f
+                )
+            }
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(vertical = 24.dp, horizontal = 18.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
