@@ -24,5 +24,5 @@ interface UsuarioLogroDao {
     suspend fun existeLogroUsuario(idUsuario: Int, idLogro: Int): Boolean
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insert(usuarioLogro: UsuarioLogroEntity)
+    suspend fun insert(usuarioLogro: UsuarioLogroEntity): Long
 }

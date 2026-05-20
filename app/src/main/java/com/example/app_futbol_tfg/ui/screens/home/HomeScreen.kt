@@ -225,7 +225,6 @@ fun HomeScreen(
             delay(300)
         }
     }
-
     Scaffold(
         topBar = {
             AppTopBar(

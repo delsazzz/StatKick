@@ -88,6 +88,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
             nombre = it.nombre,
             apellido = it.apellido1 ?: "",
             crestUrl = it.escudo,
+            flagUrl = it.bandera,
             stat = it.total.toString()
         )
     }
@@ -96,6 +97,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
             nombre = it.nombre,
             apellido = it.apellido1 ?: "",
             crestUrl = it.escudo,
+            flagUrl = it.bandera,
             stat = it.total.toString()
         )
     }
@@ -104,6 +106,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
             nombre = it.nombre,
             apellido = it.apellido1 ?: "",
             crestUrl = it.escudo,
+            flagUrl = it.bandera,
             stat = it.total.toString()
         )
     }
@@ -112,6 +115,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
             nombre = it.nombre,
             apellido = it.apellido1 ?: "",
             crestUrl = it.escudo,
+            flagUrl = it.bandera,
             stat = it.total.toString()
         )
     }
@@ -120,13 +124,14 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
             nombre = it.nombre,
             apellido = it.apellido1 ?: "",
             crestUrl = it.escudo,
+            flagUrl = it.bandera,
             stat = it.total.toString()
         )
     }
     val estadiosVistosUi = estadiosVistos.map {
         StadiumStatUi(
             name = it.nombre,
-            iconRes = R.drawable.map_pin
+            iconRes = R.drawable.logo_estadio
         )
     }
     Scaffold(
@@ -344,6 +349,7 @@ data class PlayerStatUi(
     val nombre: String,
     val apellido: String,
     val crestUrl: String?,
+    val flagUrl: String?,
     val stat: String
 )
 // Modelo visual de estadios.
@@ -413,6 +419,7 @@ private fun PlayerMiniStatCard(
     crestSize: Dp
 ) {
     val appColors = LocalAppColors.current
+
     Card(
         modifier = Modifier.width(cardWidth),
         shape = RoundedCornerShape(18.dp),
@@ -425,30 +432,33 @@ private fun PlayerMiniStatCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(avatarSize)
-                    .clip(CircleShape)
-                    .background(Color(0xFFE2E8F0)),
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.profile_user),
-                    contentDescription = "Jugador genérico",
-                    modifier = Modifier.size(avatarSize * 0.55f),
-                    contentScale = ContentScale.Fit
-                )
-            }
+            ApiImage(
+                url = item.crestUrl,
+                contentDescription = "Escudo de ${item.nombre} ${item.apellido}",
+                modifier = Modifier.size(avatarSize),
+                contentScale = ContentScale.Fit
+            )
+
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                ApiImage(
-                    url = item.crestUrl,
-                    contentDescription = "${item.nombre} ${item.apellido}",
-                    modifier = Modifier.size(crestSize),
-                    contentScale = ContentScale.Fit
-                )
+                if (!item.flagUrl.isNullOrBlank()) {
+                    ApiImage(
+                        url = item.flagUrl,
+                        contentDescription = "Bandera de ${item.nombre} ${item.apellido}",
+                        modifier = Modifier.size(crestSize),
+                        contentScale = ContentScale.Fit
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = R.drawable.profile_user),
+                        contentDescription = "Jugador genérico",
+                        modifier = Modifier.size(crestSize),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+
                 Text(
                     text = item.stat,
                     color = PrimaryBlue,
@@ -458,6 +468,7 @@ private fun PlayerMiniStatCard(
                     )
                 )
             }
+
             Text(
                 text = "${item.nombre} ${item.apellido}",
                 modifier = Modifier.height(42.dp),

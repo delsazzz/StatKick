@@ -33,28 +33,28 @@ interface PartidoJugadorDao {
     suspend fun getTotalMinutos(idJugador: Int): Int
     @Query("SELECT COUNT(*) FROM Partido_Jugador WHERE id_jugador = :idJugador")
     suspend fun getTotalPartidos(idJugador: Int): Int
-    @Query("""SELECT j.id AS id, j.nombre AS nombre, j.apellido1 AS apellido1, e.escudo AS escudo,
+    @Query("""SELECT j.id AS id, j.nombre AS nombre, j.apellido1 AS apellido1, e.escudo AS escudo, p.bandera AS bandera,
                 COUNT(*) AS total FROM Usuario_Partido up INNER JOIN Partido_Jugador pj ON pj.id_partido = up.id_partido
-                INNER JOIN Jugadores j ON j.id = pj.id_jugador LEFT JOIN Equipos e ON e.id = pj.id_equipo
-                WHERE up.id_usuario = :idUsuario GROUP BY j.id, j.nombre, j.apellido1, e.escudo 
+                INNER JOIN Jugadores j ON j.id = pj.id_jugador LEFT JOIN Equipos e ON e.id = pj.id_equipo LEFT JOIN Pais p ON p.id = j.id_pais
+                WHERE up.id_usuario = :idUsuario GROUP BY j.id, j.nombre, j.apellido1, e.escudo, p.bandera
                 ORDER BY total DESC, j.nombre ASC LIMIT :limit""")
     fun getJugadoresMasVistos(idUsuario: Int, limit: Int = 10): Flow<List<PlayerSeenStat>>
     @Query("""SELECT COUNT(DISTINCT pj.id_jugador) FROM Usuario_Partido up INNER JOIN Partido_Jugador pj 
                 ON pj.id_partido = up.id_partido WHERE up.id_usuario = :idUsuario""")
     fun countJugadoresDistintosVistos(idUsuario: Int): Flow<Int>
-    @Query("""SELECT j.id AS id, j.nombre AS nombre, j.apellido1 AS apellido1, e.escudo AS escudo, COALESCE(SUM(pj.goles), 0) AS total
+    @Query("""SELECT j.id AS id, j.nombre AS nombre, j.apellido1 AS apellido1, e.escudo AS escudo, p.bandera AS bandera, COALESCE(SUM(pj.goles), 0) AS total
                 FROM Usuario_Partido up INNER JOIN Partido_Jugador pj ON pj.id_partido = up.id_partido
-                INNER JOIN Jugadores j ON j.id = pj.id_jugador LEFT JOIN Equipos e ON e.id = pj.id_equipo
-                WHERE up.id_usuario = :idUsuario GROUP BY j.id, j.nombre, j.apellido1, e.escudo HAVING total > 0
+                INNER JOIN Jugadores j ON j.id = pj.id_jugador LEFT JOIN Equipos e ON e.id = pj.id_equipo LEFT JOIN Pais p ON p.id = j.id_pais
+                WHERE up.id_usuario = :idUsuario GROUP BY j.id, j.nombre, j.apellido1, e.escudo, p.bandera HAVING total > 0
                 ORDER BY total DESC, j.nombre ASC LIMIT :limit""")
     fun getTopGoleadoresVistos(idUsuario: Int, limit: Int = 10): Flow<List<PlayerSeenStat>>
     @Query(""" SELECT COALESCE(SUM(pj.goles), 0) FROM Usuario_Partido up INNER JOIN Partido_Jugador pj ON pj.id_partido = up.id_partido
                 WHERE up.id_usuario = :idUsuario""")
     fun getTotalGolesVistos(idUsuario: Int): Flow<Int>
-    @Query("""SELECT j.id AS id, j.nombre AS nombre, j.apellido1 AS apellido1, e.escudo AS escudo, COALESCE(SUM(pj.asistencias), 0) AS total
+    @Query("""SELECT j.id AS id, j.nombre AS nombre, j.apellido1 AS apellido1, e.escudo AS escudo, p.bandera AS bandera, COALESCE(SUM(pj.asistencias), 0) AS total
                 FROM Usuario_Partido up INNER JOIN Partido_Jugador pj ON pj.id_partido = up.id_partido
-                INNER JOIN Jugadores j ON j.id = pj.id_jugador LEFT JOIN Equipos e ON e.id = pj.id_equipo 
-                WHERE up.id_usuario = :idUsuario GROUP BY j.id, j.nombre, j.apellido1, e.escudo HAVING total > 0
+                INNER JOIN Jugadores j ON j.id = pj.id_jugador LEFT JOIN Equipos e ON e.id = pj.id_equipo LEFT JOIN Pais p ON p.id = j.id_pais
+                WHERE up.id_usuario = :idUsuario GROUP BY j.id, j.nombre, j.apellido1, e.escudo, p.bandera HAVING total > 0
                 ORDER BY total DESC, j.nombre ASC LIMIT :limit""")
     fun getTopAsistentesVistos(idUsuario: Int, limit: Int = 10): Flow<List<PlayerSeenStat>>
     @Query("""SELECT COALESCE(SUM(pj.asistencias), 0) FROM Usuario_Partido up INNER JOIN Partido_Jugador pj 
@@ -64,19 +64,19 @@ interface PartidoJugadorDao {
                 FROM Usuario_Partido up INNER JOIN Partido_Jugador pj ON pj.id_partido = up.id_partido
                 WHERE up.id_usuario = :idUsuario""")
     fun getCardStats(idUsuario: Int): Flow<CardStats>
-    @Query("""SELECT j.id AS id, j.nombre AS nombre, j.apellido1 AS apellido1, e.escudo AS escudo, COALESCE(SUM(pj.amarillas), 0) AS total
+    @Query("""SELECT j.id AS id, j.nombre AS nombre, j.apellido1 AS apellido1, e.escudo AS escudo, p.bandera AS bandera, COALESCE(SUM(pj.amarillas), 0) AS total
                 FROM Usuario_Partido up INNER JOIN Partido_Jugador pj ON pj.id_partido = up.id_partido
-                INNER JOIN Jugadores j ON j.id = pj.id_jugador LEFT JOIN Equipos e ON e.id = pj.id_equipo
-                WHERE up.id_usuario = :idUsuario GROUP BY j.id, j.nombre, j.apellido1, e.escudo HAVING total > 0
+                INNER JOIN Jugadores j ON j.id = pj.id_jugador LEFT JOIN Equipos e ON e.id = pj.id_equipo LEFT JOIN Pais p ON p.id = j.id_pais
+                WHERE up.id_usuario = :idUsuario GROUP BY j.id, j.nombre, j.apellido1, e.escudo, p.bandera HAVING total > 0
                 ORDER BY total DESC, j.nombre ASC LIMIT :limit""")
     fun getTopAmarillasVistas(idUsuario: Int, limit: Int = 10): Flow<List<PlayerSeenStat>>
     @Query("""SELECT COALESCE(SUM(pj.amarillas), 0) FROM Usuario_Partido up
     INNER JOIN Partido_Jugador pj ON pj.id_partido = up.id_partido WHERE up.id_usuario = :idUsuario""")
     fun getTotalAmarillasVistas(idUsuario: Int): Flow<Int>
-    @Query("""SELECT j.id AS id, j.nombre AS nombre, j.apellido1 AS apellido1, e.escudo AS escudo, COALESCE(SUM(pj.rojas), 0) AS total
+    @Query("""SELECT j.id AS id, j.nombre AS nombre, j.apellido1 AS apellido1, e.escudo AS escudo, p.bandera AS bandera, COALESCE(SUM(pj.rojas), 0) AS total
                 FROM Usuario_Partido up INNER JOIN Partido_Jugador pj ON pj.id_partido = up.id_partido
-                INNER JOIN Jugadores j ON j.id = pj.id_jugador LEFT JOIN Equipos e ON e.id = pj.id_equipo
-                WHERE up.id_usuario = :idUsuario GROUP BY j.id, j.nombre, j.apellido1, e.escudo HAVING total > 0
+                INNER JOIN Jugadores j ON j.id = pj.id_jugador LEFT JOIN Equipos e ON e.id = pj.id_equipo LEFT JOIN Pais p ON p.id = j.id_pais
+                WHERE up.id_usuario = :idUsuario GROUP BY j.id, j.nombre, j.apellido1, e.escudo, p.bandera HAVING total > 0
                 ORDER BY total DESC, j.nombre ASC LIMIT :limit""")
     fun getTopRojasVistas(idUsuario: Int, limit: Int = 10): Flow<List<PlayerSeenStat>>
     @Query("""SELECT COALESCE(SUM(pj.rojas), 0) FROM Usuario_Partido up 

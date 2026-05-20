@@ -13,6 +13,7 @@ data class PlayerSeenStat(
     val nombre: String,
     val apellido1: String?,
     val escudo: String?,
+    val bandera: String?,
     val total: Int
 )
 // Para rangking de estadios vistos
