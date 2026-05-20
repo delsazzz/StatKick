@@ -9,6 +9,7 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -39,7 +40,7 @@ import com.example.app_futbol_tfg.ui.viewmodels.RegisterViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.example.app_futbol_tfg.ui.screens.editprofile.EditProfileScreen
-
+// Define todas las pantallas disponibles dentro de la navegación de la aplicación
 sealed interface AppScreen {
     data object Splash : AppScreen
     data object Login : AppScreen
@@ -50,32 +51,36 @@ sealed interface AppScreen {
     data object Stats : AppScreen
     data object Map : AppScreen
     data object TotalMatches : AppScreen
+    // MatchDetail recibe información extra para saber desde donde se abrió (AddMatch o TotalMatches)
     data class MatchDetail(val matchId: Int, val from: DetailOrigin) : AppScreen
 }
-
+// Controla el comportamiento del botón de atrás en MatchDetail
 enum class DetailOrigin {
     ADD_MATCH,
     SAVED_MATCHES
 }
-
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Inicialización de la BBDD local
         val db = DatabaseProvider.getDatabase(applicationContext)
+        // Gestor encargado de mantener la sesión del usuario
         val sessionManager = SessionManager(applicationContext)
+        // Repositorio utilizado para login y registro
         val authRepository = AuthRepository(db, sessionManager)
-
+        // Inicialización del ViewModel de login mediante factory personalizada
         val loginViewModel: LoginViewModel by viewModels {
             BaseViewModelFactory(LoginViewModel::class.java) {
                 LoginViewModel(authRepository)
             }
         }
+        // Inicialización del ViewModel de registro
         val registerViewModel: RegisterViewModel by viewModels {
             BaseViewModelFactory(RegisterViewModel::class.java) {
                 RegisterViewModel(authRepository)
             }
         }
-
+        // Carga inicial de datos desde la API-Football en segundo plano
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val apiRepo = ApiFootballRepositoryProvider.getInstance(db)
@@ -84,7 +89,7 @@ class MainActivity : ComponentActivity() {
                 Log.e("MainActivity", "Error en carga inicial", e)
             }
         }
-
+        // Permite que la aplicación ocupe toda la pantalla
         enableEdgeToEdge()
         setContent {
             MainContent(
@@ -104,9 +109,10 @@ fun MainContent(
     loginViewModel: LoginViewModel,
     registerViewModel: RegisterViewModel
 ) {
+    // Estado utilizado para controlar el modo claro y oscuro
     var isDarkMode by remember { mutableStateOf(sessionManager.isDarkMode()) }
     val appColors = if (isDarkMode) DarkAppColors else LightAppColors
-
+    // Proporciona la paleta de colores personalizada al resto de composables
     CompositionLocalProvider(LocalAppColors provides appColors) {
         App_Futbol_TFGTheme(darkTheme = isDarkMode) {
             TfgApp(
@@ -115,6 +121,7 @@ fun MainContent(
                 loginViewModel = loginViewModel,
                 registerViewModel = registerViewModel,
                 isDarkMode = isDarkMode,
+                // Cambia el tema de la aplicación y guarda la preferencia
                 onToggleDarkMode = {
                     isDarkMode = !isDarkMode
                     sessionManager.setDarkMode(isDarkMode)
@@ -133,19 +140,22 @@ fun TfgApp(
     isDarkMode: Boolean,
     onToggleDarkMode: () -> Unit
 ) {
+    // Controla la pantalla actual mostrada en la aplicación
     var currentScreen by remember { mutableStateOf<AppScreen>(AppScreen.Splash) }
-    var currentUserId by remember { mutableStateOf(sessionManager.getUserId()) }
+    // Mantiene el usuario autenticado durante la sesión abierta
+    var currentUserId by remember { mutableIntStateOf(sessionManager.getUserId()) }
+    // Estados persistentes utilizados en el buscador de AddMatch
     var addMatchSearchText by rememberSaveable { mutableStateOf("") }
     var addMatchSelectedSuggestionType by rememberSaveable { mutableStateOf<String?>(null) }
     var addMatchSelectedSuggestionId by rememberSaveable { mutableStateOf<Int?>(null) }
     var addMatchShowSuggestions by rememberSaveable { mutableStateOf(false) }
-
+    // Cierra la sesión y devuelve al login para iniciar de nuevo
     val onLogout: () -> Unit = {
         sessionManager.clearSession()
         currentUserId = -1
         currentScreen = AppScreen.Login
     }
-
+    // Sistema de navegación principal de la aplicación
     when (val screen = currentScreen) {
         AppScreen.Splash -> SplashScreen(
             isLoggedIn = sessionManager.isLoggedIn(),

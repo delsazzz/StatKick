@@ -68,6 +68,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.material3)
     implementation("androidx.compose.material:material-icons-extended")
+    implementation(libs.play.services.maps)
     ksp(libs.androidx.room.compiler)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

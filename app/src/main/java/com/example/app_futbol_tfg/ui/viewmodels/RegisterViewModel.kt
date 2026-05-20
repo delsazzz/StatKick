@@ -9,25 +9,17 @@ import kotlinx.coroutines.launch
 
 // Estados posibles de la pantalla de registro
 sealed class RegisterUiState {
-    // Estado inicial, esperando interacción del usuario
     object Idle : RegisterUiState()
-    // Cargando, mientras se procesa el registro
     object Loading : RegisterUiState()
-    // Registro correcto, devuelve el id del nuevo usuario
     data class Success(val userId: Int) : RegisterUiState()
-    // Error con mensaje descriptivo para mostrar en la UI
     data class Error(val message: String) : RegisterUiState()
 }
-
 class RegisterViewModel(private val authRepository: AuthRepository) : ViewModel() {
-
     // Estado observable de la UI
     private val _uiState = MutableStateFlow<RegisterUiState>(RegisterUiState.Idle)
     val uiState: StateFlow<RegisterUiState> = _uiState
-
     // Intenta registrar un nuevo usuario con los datos introducidos
     fun register(nombreUsuario: String, email: String, password: String, confirmPassword: String) {
-        // Validaciones antes de llamar al repositorio
         // Validaciones del nombre de usuario
         if (nombreUsuario.isBlank()) {
             _uiState.value = RegisterUiState.Error("El nombre de usuario no puede estar vacío")
@@ -45,8 +37,7 @@ class RegisterViewModel(private val authRepository: AuthRepository) : ViewModel(
             _uiState.value = RegisterUiState.Error("El nombre de usuario solo puede contener letras, números y guiones bajos")
             return
         }
-
-// Validaciones del email
+        // Validaciones del email
         if (email.isBlank()) {
             _uiState.value = RegisterUiState.Error("El email no puede estar vacío")
             return
@@ -59,6 +50,7 @@ class RegisterViewModel(private val authRepository: AuthRepository) : ViewModel(
             _uiState.value = RegisterUiState.Error("El email no puede tener más de 100 caracteres")
             return
         }
+        // Validaciones de seguridad de contraseña
         if (password.isBlank()) {
             _uiState.value = RegisterUiState.Error("La contraseña no puede estar vacía")
             return
@@ -105,7 +97,6 @@ class RegisterViewModel(private val authRepository: AuthRepository) : ViewModel(
             }
         }
     }
-
     // Resetea el estado a Idle para limpiar errores
     fun resetState() {
         _uiState.value = RegisterUiState.Idle

@@ -6,8 +6,11 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
+// Entidad que representa los partidos almacenados en la base de datos local
+// Mantiene relaciones con equipos, competición, temporada y estadio
 @Entity(
     tableName = "Partidos",
+    // Relaciones de integridad referencial entre partidos y el resto de entidades principales
     foreignKeys = [
         ForeignKey(
             entity = EquipoEntity::class,
@@ -45,6 +48,7 @@ import androidx.room.PrimaryKey
             onUpdate = ForeignKey.CASCADE
         )
     ],
+    // Índices utilizados para optimizar búsquedas y relaciones frecuentes
     indices = [
         Index("id_equipo_local"),
         Index("id_equipo_visitante"),
@@ -53,7 +57,9 @@ import androidx.room.PrimaryKey
         Index("id_estadio")
     ]
 )
+// Modelo persistente utilizado por Room para representar partidos
 data class PartidoEntity(
+    // Identificador único del partido
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     @ColumnInfo(name = "id_equipo_local")

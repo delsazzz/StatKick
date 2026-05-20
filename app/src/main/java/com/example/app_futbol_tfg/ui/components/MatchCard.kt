@@ -1,6 +1,5 @@
 package com.example.app_futbol_tfg.ui.components
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,17 +26,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import com.example.app_futbol_tfg.ui.ui.theme.CardBackground
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
-import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
-import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
 import com.example.app_futbol_tfg.ui.ui.theme.LocalAppColors
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.draw.alpha
 import com.example.app_futbol_tfg.R
 
-
-//  Modelo visual temporal para la maqueta de partidos sugeridos.
+// Modelo visual reutilizable utilizado para representar partidos en distintas pantallas
 data class MatchSuggestionUi(
     val id: Int,
     val homeTeam: String,
@@ -51,8 +46,7 @@ data class MatchSuggestionUi(
     val logoCompetition: String?,
     val competitionId: Int?
 )
-// Card reutilizable de un partido sugerido.
-//@SuppressLint("NotConstructor")
+// Componente reutilizable utilizado para representar partidos en formato card
 @Composable
 fun MatchCard(
     match: MatchSuggestionUi,
@@ -76,8 +70,8 @@ fun MatchCard(
         Box(
             modifier = Modifier.fillMaxWidth()
         ) {
+            // Fondo dinámico según la competición asociada al partido
             val backgroundRes = getCompetitionBackground(match.competitionId)
-
             if (backgroundRes != null) {
                 Image(
                     painter = painterResource(id = backgroundRes),
@@ -94,12 +88,11 @@ fun MatchCard(
                     .padding(cardPadding),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                // Fila principal del partido
+                // Información principal del encuentro: equipos, escudos y resultado
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Equipo local
                     Text(
                         text = match.homeTeam,
                         modifier = Modifier.weight(1f),
@@ -113,7 +106,6 @@ fun MatchCard(
                         )
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    // Escudo local
                     ApiImage(
                         url = match.homeCrestUrl,
                         contentDescription = match.homeTeam,
@@ -121,7 +113,6 @@ fun MatchCard(
                         contentScale = ContentScale.Fit
                     )
                     Spacer(modifier = Modifier.width(12.dp))
-                    // Resultado
                     Text(
                         text = match.result,
                         color = PrimaryBlue,
@@ -131,7 +122,6 @@ fun MatchCard(
                         )
                     )
                     Spacer(modifier = Modifier.width(12.dp))
-                    // Escudo visitante
                     ApiImage(
                         url = match.awayCrestUrl,
                         contentDescription = match.awayTeam,
@@ -139,7 +129,6 @@ fun MatchCard(
                         contentScale = ContentScale.Fit
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    // Equipo visitante
                     Text(
                         text = match.awayTeam,
                         modifier = Modifier.weight(1f),
@@ -153,7 +142,7 @@ fun MatchCard(
                         )
                     )
                 }
-                // Segunda fila con información adicional del partido
+                // Información complementaria del partido: fecha, temporada y competición
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -167,7 +156,6 @@ fun MatchCard(
                     Spacer(modifier = Modifier.width(8.dp))
                     DotSeparator()
                     Spacer(modifier = Modifier.width(8.dp))
-
                     Text(
                         text = match.season,
                         color = appColors.textSecondary,
@@ -195,20 +183,21 @@ fun MatchCard(
         }
     }
 }
-    @Composable
-    private fun DotSeparator() {
-        val appColors = LocalAppColors.current
-        Text(
-            text = "•",
-            color = appColors.textSecondary,
-            style = MaterialTheme.typography.bodySmall
-        )
+// Separador visual reutilizable entre elementos informativos
+@Composable
+private fun DotSeparator() {
+    val appColors = LocalAppColors.current
+    Text(
+        text = "•",
+        color = appColors.textSecondary,
+        style = MaterialTheme.typography.bodySmall
+    )
+}
+// Devuelve el fondo decorativo asociado a determinadas competiciones
+private fun getCompetitionBackground(competitionId: Int?): Int? {
+    return when (competitionId) {
+        140 -> R.drawable.fondo_laliga
+        2 -> R.drawable.fondo_champions_league
+        else -> null
     }
-
-    private fun getCompetitionBackground(competitionId: Int?): Int? {
-        return when (competitionId) {
-            140 -> R.drawable.fondo_laliga
-            2 -> R.drawable.fondo_champions_league
-            else -> null
-        }
-    }
+}

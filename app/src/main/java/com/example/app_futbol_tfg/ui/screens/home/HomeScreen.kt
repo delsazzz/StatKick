@@ -77,7 +77,8 @@ fun HomeScreen(
     val cardColor = appColors.card
     val textColorPrimary = appColors.textPrimary
     val textColorSecondary = appColors.textSecondary
-
+    // Estados reactivos obtenidos desde Room
+    // collectAsState permite actualizar automáticamente la UI cuando cambian los datos
     val partidosVistos by db.usuarioPartidoDao().getPartidosByUsuario(userId).collectAsState(initial = emptyList())
     val equipos by db.equipoDao().getAll().collectAsState(initial = emptyList())
     val jugadores by db.jugadorDao().getAll().collectAsState(initial = emptyList())
@@ -85,51 +86,43 @@ fun HomeScreen(
     val usuarioLogrosState = db.usuarioLogroDao().getByUsuario(userId).collectAsState(initial = null)
     val usuarioLogros = usuarioLogrosState.value
     val unlockedAchievementIds = usuarioLogros?.map { it.idLogro }?.toSet() ?: emptySet()
-
     val equiposMap = equipos.associateBy { it.id }
     val jugadoresMap = jugadores.associateBy { it.id }
-
+    // Cálculo de estadísticas generales a partir de los partidos registrados
     val totalPartidos = partidosVistos.size
     val totalGoles = partidosVistos.sumOf { it.golesLocal + it.golesVisitante }
     val teamCounter = mutableMapOf<Int, Int>()
-
     partidosVistos.forEach { partido ->
         teamCounter[partido.idEquipoLocal] = (teamCounter[partido.idEquipoLocal] ?: 0) + 1
         teamCounter[partido.idEquipoVisitante] = (teamCounter[partido.idEquipoVisitante] ?: 0) + 1
     }
-
     val mostViewedTeam = teamCounter.maxByOrNull { it.value }?.key
     val mostViewedTeamName = mostViewedTeam?.let { equiposMap[it]?.nombre } ?: "-"
     val mostViewedTeamCrest = mostViewedTeam?.let { equiposMap[it]?.escudo }
-
     val matchIds = partidosVistos.map { it.id }
     val playerCounter = mutableMapOf<Int, Int>()
     var menuExpanded by remember { mutableStateOf(false) }
     var achievementPopup by remember { mutableStateOf<AchievementUi?>(null) }
-
     val partidoJugadores by if (matchIds.isNotEmpty()) {
         db.partidoJugadorDao().getByPartidos(matchIds).collectAsState(initial = emptyList())
     } else {
         remember { mutableStateOf(emptyList()) }
     }
-
     partidoJugadores.forEach { pj ->
         playerCounter[pj.idJugador] = (playerCounter[pj.idJugador] ?: 0) + 1
     }
-
     val mostViewedPlayer = playerCounter.maxByOrNull { it.value }?.key
     val mostViewedPlayerName = mostViewedPlayer?.let { id ->
         val jugador = jugadoresMap[id]
         listOfNotNull(jugador?.nombre, jugador?.apellido1).joinToString(" ")
     } ?: "-"
-
     val totalEquiposVistos = teamCounter.keys.size
     val totalJugadoresVistos = playerCounter.keys.size
     val totalEstadiosVistos = partidosVistos.mapNotNull { it.idEstadio }.distinct().size
     val totalCompeticionesVistas = partidosVistos.mapNotNull { it.idCompeticion }.distinct().size
     val totalVictoriasLocales = partidosVistos.count { it.golesLocal > it.golesVisitante }
     val totalEmpates = partidosVistos.count { it.golesLocal == it.golesVisitante }
-
+    // Definición de logros desbloqueables según actividad del usuario
     val achievements = listOf(
         AchievementUi(
             id = 1,
@@ -202,6 +195,8 @@ fun HomeScreen(
             desbloqueado = totalEmpates >= 1
         )
     )
+    // Detecta nuevos logros desbloqueados y los guarda en la BBDD
+    // También muestra un pop-up temporal al usuario cuando consigue uno nuevo
     LaunchedEffect(achievements, usuarioLogros) {
         if (usuarioLogros == null) return@LaunchedEffect
         val nuevosLogros = achievements.filter { achievement ->
@@ -225,6 +220,7 @@ fun HomeScreen(
             delay(300)
         }
     }
+    // Estructura principal de la pantalla con top bar, contenido y navegación inferior
     Scaffold(
         topBar = {
             AppTopBar(
@@ -279,6 +275,7 @@ fun HomeScreen(
         },
         containerColor = backgroundColor
     ) { innerPadding ->
+        // Adaptación responsive básica según el tamaño disponible de la pantalla (adaptativo)
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
@@ -292,7 +289,6 @@ fun HomeScreen(
             val horizontalPadding = if (isSmallScreen) 16.dp else 20.dp
             val sectionSpacing = if (isSmallScreen) 16.dp else 22.dp
             val cardCorner = 22.dp
-
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -470,7 +466,7 @@ fun HomeScreen(
         )
     }
 }
-
+// Card reutilizable usada para mostrar las estadísticas resumidas
 @Composable
 private fun StatCard(
     modifier: Modifier = Modifier,
@@ -522,7 +518,7 @@ private fun StatCard(
         }
     }
 }
-
+// Card visual utilizada para representar los logros
 @Composable
 private fun AchievementCard(
     title: String,
@@ -584,6 +580,7 @@ data class AchievementUi (
     val iconRes: Int,
     val desbloqueado: Boolean
 )
+// Devuelve el recurso gráfico correspondiente al avatar seleccionado por el usuario
 private fun getAvatarDrawable(avatar: String?): Int {
     return when (avatar) {
         "profile_user_1" -> R.drawable.avatar_cristiano_ronaldo

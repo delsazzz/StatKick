@@ -1,6 +1,5 @@
 package com.example.app_futbol_tfg.data.mapper
 
-import android.util.Log
 import com.example.app_futbol_tfg.data.entity.CompeticionEntity
 import com.example.app_futbol_tfg.data.entity.EquipoEntity
 import com.example.app_futbol_tfg.data.entity.EstadioEntity
@@ -14,9 +13,10 @@ import com.example.app_futbol_tfg.data.remote.model.PlayerItem
 import com.example.app_futbol_tfg.data.remote.model.TeamItem
 import com.example.app_futbol_tfg.data.entity.PartidoJugadorEntity
 import com.example.app_futbol_tfg.data.remote.model.FixturePlayerData
-import com.example.app_futbol_tfg.data.remote.model.FixturePlayersTeam
 
-// Convierte una respuesta de liga de la API a una entidad de Room
+// Funciones mapper encargadas de transformar respuestas de API-Football
+// en entidades persistibles compatibles con Room
+// Convierte una competición recibida desde la API en una entidad local.
 fun LeagueItem.toCompeticionEntity(): CompeticionEntity {
     return CompeticionEntity(
         id = this.league.id,
@@ -25,8 +25,7 @@ fun LeagueItem.toCompeticionEntity(): CompeticionEntity {
         logo = this.league.logo // URL del logo
     )
 }
-
-// Convierte una respuesta de equipo de la API a una entidad de Room
+// Convierte un equipo remoto en una entidad persistible de Room
 fun TeamItem.toEquipoEntity(): EquipoEntity {
     return EquipoEntity(
         id = this.team.id,
@@ -35,13 +34,11 @@ fun TeamItem.toEquipoEntity(): EquipoEntity {
         idEstadio = this.venue?.id,
         idLocalidad = null,
         idPais = null,
-        // El escudo viene como URL desde la API, no como drawable local
+        // El escudo se almacena como URL remota proporcionada por la API
         escudo = this.team.logo ?: ""
     )
 }
-
-// Convierte la info del estadio de un equipo a una entidad de Room.
-// Devuelve null si el estadio no tiene id o no existe en la respuesta
+// Convierte la información de estadio asociada a un equipo en una entidad local
 fun TeamItem.toEstadioEntity(): EstadioEntity? {
     val venue = this.venue ?: return null
     val venueId = venue.id ?: return null
@@ -53,11 +50,9 @@ fun TeamItem.toEstadioEntity(): EstadioEntity? {
         capacidad = null
     )
 }
-
-// Convierte un partido de la API a una entidad de Room
+// Convierte un partido recibido desde la API en una entidad local persistible
 fun FixtureItem.toPartidoEntity(): PartidoEntity {
-    // La fecha viene en formato ISO 8601 (2024-01-15T20:00:00+00:00)
-    // Nos quedamos solo con la parte YYYY-MM-DD para ser consistentes con la BBDD local
+    // Se normaliza la fecha para mantener consistencia con el formato almacenado en Room
     val fecha = this.fixture.date?.take(10) ?: "0000-00-00"
     return PartidoEntity(
         id = this.fixture.id,
@@ -72,8 +67,7 @@ fun FixtureItem.toPartidoEntity(): PartidoEntity {
         jornada = null
     )
 }
-
-// Convierte un jugador de la API a una entidad de Room
+// Convierte información de jugador remota en una entidad local
 fun PlayerItem.toJugadorEntity(): JugadorEntity {
     return JugadorEntity(
         id = this.player.id,
@@ -83,25 +77,25 @@ fun PlayerItem.toJugadorEntity(): JugadorEntity {
         fechaNacimiento = null,
         idLocalidad = null,
         idPais = null,
-        // El equipo actual se asignará desde fuera cuando se conozca
+        // El equipo actual se asigna posteriormente durante la sincronización
         idEquipoActual = null,
         posicion = null,
         activo = true
     )
 }
-
-// Convierte un país de la API a una entidad de Room.
-// La bandera viene como URL desde la API, la guardamos directamente.
+// Convierte países recibidos desde la API en entidades persistibles
 fun CountryItem.toPaisEntity(): PaisEntity {
     return PaisEntity(
-        id = 0, // autoGenerate, Room asigna el id
+        id = 0, // AutoGenerate, Room asigna el id
         nombre = this.name ?: "Sin nombre",
         bandera = this.flag // URL tipo https://media.api-sports.io/flags/es.svg
     )
 }
+// Convierte jugadores participantes de un partido en entidades locales
 fun FixturePlayerData.toJugadorEntity(idEquipo: Int): JugadorEntity? {
     val playerInfo = this.player ?: return null
     val playerId = playerInfo.id ?: return null
+    // Separación básica del nombre completo para adaptar el modelo de datos local
     val partes = playerInfo.name?.split(" ") ?: emptyList()
     return JugadorEntity(
         id = playerId,
@@ -116,7 +110,7 @@ fun FixturePlayerData.toJugadorEntity(idEquipo: Int): JugadorEntity? {
         activo = true
     )
 }
-
+// Convierte estadísticas individuales de un partido en relaciones Partido_Jugador
 fun FixturePlayerData.toPartidoJugadorEntity(idPartido: Int, idEquipo: Int): PartidoJugadorEntity? {
     val playerInfo = this.player ?: return null
     val playerId = playerInfo.id ?: return null
@@ -124,12 +118,12 @@ fun FixturePlayerData.toPartidoJugadorEntity(idPartido: Int, idEquipo: Int): Par
     val games = stats?.games
     val goals = stats?.goals
     val cards = stats?.cards
-    Log.d("MinutosDebug", "Jugador ${playerInfo.name} - minutes: ${games?.minutes} - substitute: ${games?.substitute}")
     return PartidoJugadorEntity(
         id = 0,
         idPartido = idPartido,
         idJugador = playerId,
         idEquipo = idEquipo,
+        // Se considera titular al jugador que no figura como suplente
         titular = games?.substitute == false,
         minutosJugados = games?.minutes,
         goles = goals?.total ?: 0,

@@ -11,20 +11,17 @@ import kotlinx.coroutines.launch
 sealed class LoginUiState {
     // Estado inicial, esperando interacción del usuario
     object Idle : LoginUiState()
-    // Cargando, mientras se validan las credenciales
+    // Estado mostrado mientras se valida el inicio de sesión
     object Loading : LoginUiState()
     // Login correcto, devuelve el id del usuario
     data class Success(val userId: Int) : LoginUiState()
     // Error con mensaje descriptivo para mostrar en la UI
     data class Error(val message: String) : LoginUiState()
 }
-
 class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
-
-    // Estado observable de la UI
+    // Estado observable de la UI mediante StateFlow
     private val _uiState = MutableStateFlow<LoginUiState>(LoginUiState.Idle)
     val uiState: StateFlow<LoginUiState> = _uiState
-
     // Intenta iniciar sesión con las credenciales introducidas
     fun login(email: String, password: String) {
         // Validaciones antes de llamar al repositorio
@@ -50,8 +47,7 @@ class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
             }
         }
     }
-
-    // Resetea el estado a Idle para limpiar errores
+    // Resetea al estado inicial para limpiar errores
     fun resetState() {
         _uiState.value = LoginUiState.Idle
     }

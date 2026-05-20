@@ -31,8 +31,9 @@ import com.example.app_futbol_tfg.data.entity.UsuarioEntity
 import com.example.app_futbol_tfg.data.entity.UsuarioLogroEntity
 import com.example.app_futbol_tfg.data.entity.UsuarioPartidoEntity
 
-// Esta es la BBDD principal de la app
-// Aquí se registran las entidades que Room debe convertir en tablas
+// BBDD principal de la aplicación
+// Room usa esta clase para generar automáticamente la estructura de tablas, relaciones y acceso
+// a datos definidos en las entidades y los DAO
 @Database(
     entities = [
         CompeticionEntity::class,
@@ -50,15 +51,14 @@ import com.example.app_futbol_tfg.data.entity.UsuarioPartidoEntity
         UsuarioPartidoEntity::class,
         ApiSyncEntity::class
     ],
-    // La versión debe incrementarse cada vez que el esquema de la BBDD cambie
+    // La versión se incrementa cada vez que el esquema de la BBDD cambie
     version = 5,
     // Este proyecto no exporta el esquema a ficheros JSON
     exportSchema = false
 )
-
 abstract class AppDatabase : RoomDatabase() {
-    // Todos estos métodos son accesibles para Room
-    // Genera automáticamente la implementación de cada DAO
+    // Métodos de acceso a datos (DAO) utilziados por la aplicación
+    // Room genera automáticamente la implementación de cada DAO
     abstract fun competicionDao(): CompeticionDao
     abstract fun equipoDao(): EquipoDao
     abstract fun estadioDao(): EstadioDao

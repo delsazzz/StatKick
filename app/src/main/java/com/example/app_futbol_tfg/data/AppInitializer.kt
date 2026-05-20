@@ -6,50 +6,45 @@ import com.example.app_futbol_tfg.data.entity.LogroEntity
 import com.example.app_futbol_tfg.data.repository.ApiFootballRepository
 import kotlinx.coroutines.delay
 
+// Inicialización global de datos de la aplicación
+// Gestiona la carga inicial desde API-Football y la preparación de datos auxiliares
 private const val TAG = "AppInitializer"
 
-// IDs de las competiciones que queremos cargar en la app
+// Competiciones principales sincronizadas durante la carga inicial
 val LIGAS_SELECCIONADAS = listOf(
     2,   // Champions League
     140  // La Liga
 )
-
-// Se encarga de la carga inicial de datos desde la API al arrancar la app.
-// Solo carga si Room está vacío para no gastar cuota innecesariamente.
-// El orden respeta las foreign keys de la BBDD.
+// Ejecuta la sincronización inicial de datos respetando el orden de dependencias
+// entre entidades para mantener la integridad referencial de la base de datos
 suspend fun initializeAppData(repo: ApiFootballRepository, apiKey: String, database: AppDatabase) {
     try {
         seedLogros(database)
-        // 1. Países — no depende de nadie, debe ir primero
+        // Sincronización inicial de países
         Log.d(TAG, "Iniciando carga de países...")
         repo.fetchAndSaveCountries(apiKey)
-
-        // 2. Competiciones — con delay para respetar el límite de la API
+        // Sincronización de competiciones controlando el límite de peticiones de la API
         Log.d(TAG, "Iniciando carga de competiciones seleccionadas...")
         LIGAS_SELECCIONADAS.forEach { leagueId ->
             repo.fetchAndSaveLeagueById(apiKey, leagueId)
             delay(300)
         }
-
-        // 3. Equipos y estadios — con delay para respetar el límite de la API
+        // Sincronización de equipos y estadios asociados
         Log.d(TAG, "Iniciando carga de equipos...")
         LIGAS_SELECCIONADAS.forEach { leagueId ->
             repo.fetchAndSaveTeams(apiKey, leagueId, 2024)
             delay(1500)
         }
-
-        // 4. Actualizamos coordenadas de estadios conocidos
-        // Los estadios vienen de la API sin coordenadas, las añadimos manualmente
+        // Actualización manual de coordenadas GPS para estadios
+        // API-Football no proporciona esta información de forma consistente
         Log.d(TAG, "Actualizando coordenadas de estadios...")
         actualizarCoordenadasEstadios(repo.db)
-
         Log.d(TAG, "Carga inicial completada")
-
     } catch (e: Exception) {
         Log.e(TAG, "Error durante la carga inicial", e)
     }
 }
-
+// Inserta los logros predefinidos utilizados por el sistema de gamificación
 private suspend fun seedLogros(database: AppDatabase) {
     val logroDao = database.logroDao()
     logroDao.insertLogro(
@@ -123,12 +118,10 @@ private suspend fun seedLogros(database: AppDatabase) {
         )
     )
 }
-
-// Actualiza las coordenadas GPS y dirección de los estadios que ya están en Room.
-// Se usa el nombre como clave porque el id puede variar entre instalaciones.
+// Completa manualmente información geográfica de estadios almacenados en Room
+// El nombre del estadio se utiliza como referencia principal de actualización
 private suspend fun actualizarCoordenadasEstadios(db: AppDatabase) {
     val dao = db.estadioDao()
-
     val estadios = listOf(
         listOf("Centre d'Entrenament de la FAF 1", 42.4976, 1.5076, "Centre d'Entrenament de la FAF, Andorra"),
         listOf("Vazgen Sargsyan anvan Hanrapetakan Marzadasht", 40.1719, 44.5256, "Vazgen Sargsyan Republican Stadium, Ereván"),
@@ -227,7 +220,6 @@ private suspend fun actualizarCoordenadasEstadios(db: AppDatabase) {
         listOf("Chobani Stadyumu Fenerbahçe Şükrü Saracoğlu Spor Kompleksi", 40.987664072687735, 29.036879568218474, "Kadıköy, Estambul"),
         listOf("RAMS Park", 41.10334481800755, 28.99105412589377, "Huzur Mah., Sariyer, Estambul"),
     )
-
     estadios.forEach { datos ->
         dao.updateCoordenadas(
             nombre    = datos[0] as String,

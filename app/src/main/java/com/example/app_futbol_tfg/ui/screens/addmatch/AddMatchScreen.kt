@@ -1,6 +1,5 @@
 package com.example.app_futbol_tfg.ui.screens.addmatch
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -39,15 +38,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.LocalContext
 import com.example.app_futbol_tfg.R
 import com.example.app_futbol_tfg.data.database.AppDatabase
 import com.example.app_futbol_tfg.ui.components.AppBottomBar
 import com.example.app_futbol_tfg.ui.components.AppTopBar
-import com.example.app_futbol_tfg.ui.ui.theme.BackgroundLight
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.remember
 import com.example.app_futbol_tfg.ui.components.MatchCard
@@ -67,26 +63,24 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                 searchText: String, onSearchTextChange: (String) -> Unit, selectedSuggestionType: String?,
                 onSelectedSuggestionTypeChange: (String?) -> Unit, selectedSuggestionId: Int?, onSelectedSuggestionIdChange: (Int?) -> Unit,
                 showSuggestions: Boolean, onShowSuggestionsChange: (Boolean) -> Unit) {
-
     val appColors = LocalAppColors.current
-    val context = LocalContext.current
-
+    // Repositorios y estados necesarios para consultar Room y cargar datos desde la API
     val scope = rememberCoroutineScope()
     val apiRepo = remember { ApiFootballRepositoryProvider.getInstance(db) }
     var isLoadingFromApi by remember { mutableStateOf(false) }
-
-    // Aquí se recuperan los datos necesarios desde Room para construir la búsqueda y lista de partidos
+    // Recuperación de los datos necesarios desde Room para construir la búsqueda y lista de partidos
     val partidos by db.partidoDao().getAll().collectAsState(initial = emptyList())
     val equipos by db.equipoDao().getAll().collectAsState(initial = emptyList())
     val competiciones by db.competicionDao().getAll().collectAsState(initial = emptyList())
     val temporadas by db.temporadaDao().getAll().collectAsState(initial = emptyList())
     val paises by db.paisDao().getAll().collectAsState(initial = emptyList())
-    // Transformamos las listas en mapas para acceder a los datos por id de forma más eficiente
+    // Mapas auxiliares para acceder rápidamente a cada entidad por su identificador.
     val equiposMap = equipos.associateBy { it.id }
     val competicionesMap = competiciones.associateBy { it.id }
     val temporadasMap = temporadas.associateBy { it.id }
     val paisesMap = paises.associateBy { it.id }
-    // Convertimos equipos y competiciones en modelos visuales reutilizables para el buscador
+    // Modelos visuales utilizados por el buscador.
+    // Separamos equipos y competiciones para poder distinguir el tipo de sugerencia seleccionada.
     val teamSuggestions = equipos.map { equipo ->
         SearchSuggestionUi.Team(
             id = equipo.id,
@@ -107,7 +101,7 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
         "competition" -> competitionSuggestions.find { it.id == selectedSuggestionId }
         else -> null
     }
-    // Adaptamos los partidos a un modelo de UI para reutilizar MatchCard
+    // Modelo visual de partidos adaptado al componente MatchCard
     val matches = partidos.map { partido ->
         val equipoLocal = equiposMap[partido.idEquipoLocal]
         val equipoVisitante = equiposMap[partido.idEquipoVisitante]
@@ -128,23 +122,23 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
             competitionId = competicion?.id
         )
     }
-    // Se normaliza el texto introducido en el buscador a minúsculas y sin espacios de más
+    // Normalización del texto introducido en el buscador a minúsculas y sin espacios de más
     val query = searchText.trim().lowercase()
-    // Aplicamos un filtro de sugerencias según lo que escribe el usuario en el buscador
+    // Aplicación de un filtro de sugerencias según lo que escribe el usuario en el buscador
     val filteredSuggestions = if (query.isBlank()) {
         emptyList()
     } else {
         val teams = teamSuggestions.filter { it.name.lowercase().contains(query) }
         val competitions = competitionSuggestions.filter { it.name.lowercase().contains(query) }
-        // Limitamos las sugerencias al número que queramos para no extender demasiado la lista
+        // Limitación de las sugerencias al número que queramos para no extender demasiado la lista
         (teams + competitions).take(8)
     }
-    // Filtrado de partidos según el texto escrito o la sugerencia seleccionada
+    // Partidos sugeridos por defecto cuando no hay búsqueda activa
     val suggestedMatches = matches
         .sortedByDescending { it.date }
         .take(10)
-    // Cuando el usuario selecciona una sugerencia, cargamos los partidos
-// desde la API si no los tenemos ya en Room
+    // Filtra los partidos según la sugerencia seleccionada o el texto escrito.
+    // Si se selecciona equipo o competición, se realiza una carga bajo demanda desde la API.
     val filteredMatches = when (val suggestion = selectedSuggestion) {
         is SearchSuggestionUi.Team -> {
             // Carga bajo demanda de partidos del equipo seleccionado
@@ -194,6 +188,7 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
             }
         }
     }
+    // Estructura principal de la pantalla con barra superior, contenido y navegación inferior
     Scaffold(
         topBar = {
             AppTopBar(
@@ -214,7 +209,7 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                 .padding(innerPadding)
                 .background(appColors.background)
         ) {
-            // Variables adaptativas según tamaño del dispositivo
+            // Ajustes responsive para adaptar tamaños y espaciados a pantallas pequeñas.
             val isSmallScreen = maxWidth < 360.dp || maxHeight < 700.dp
             val horizontalPadding = if (isSmallScreen) 14.dp else 20.dp
             val sectionSpacing = if (isSmallScreen) 14.dp else 18.dp
@@ -321,6 +316,7 @@ fun AddMatchScreen(db: AppDatabase, onNavigateBottom: (Int) -> Unit, onOpenMatch
                         )
                     }
                 }
+                // Listado final de partidos mostrados en pantalla
                 filteredMatches.forEach { match ->
                     MatchCard(
                         match = match,
@@ -387,8 +383,7 @@ private fun SuggestionsDropdown(suggestions: List<SearchSuggestionUi>, onSuggest
         }
     }
 }
-// Modelo de sugerencias que se utiliza en el buscador para equipos y competiciones
-// Nos permite mezclar en una misma lista ambos
+// Modelo sellado que representa los dos tipos de sugerencia posibles.
 sealed class SearchSuggestionUi {
     data class Team(
         val id: Int,

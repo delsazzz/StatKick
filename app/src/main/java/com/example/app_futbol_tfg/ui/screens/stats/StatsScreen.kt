@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
@@ -31,8 +30,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -43,12 +40,7 @@ import com.example.app_futbol_tfg.R
 import com.example.app_futbol_tfg.data.database.AppDatabase
 import com.example.app_futbol_tfg.ui.components.AppBottomBar
 import com.example.app_futbol_tfg.ui.components.AppTopBar
-import com.example.app_futbol_tfg.ui.ui.theme.BackgroundLight
-import com.example.app_futbol_tfg.ui.ui.theme.CardBackground
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
-import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
-import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -58,6 +50,7 @@ import com.example.app_futbol_tfg.ui.ui.theme.LocalAppColors
 @Composable
 fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
     val appColors = LocalAppColors.current
+    // Estados reactivos obtenidos desde Room para construir todas las estadísticas del usuario
     val totalPartidos by db.usuarioPartidoDao().countByUsuarioFlow(userId).collectAsState(initial = 0)
     val topEquipos by db.usuarioPartidoDao().getTopEquiposVistos(userId).collectAsState(initial = emptyList())
     val totalEquiposDistintos by db.usuarioPartidoDao().countEquiposDistintosVistos(userId).collectAsState(initial = 0)
@@ -73,9 +66,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
     val totalAmarillasVistas by db.partidoJugadorDao().getTotalAmarillasVistas(userId).collectAsState(initial = 0)
     val rojasVistas by db.partidoJugadorDao().getTopRojasVistas(userId).collectAsState(initial = emptyList())
     val totalRojasVistas by db.partidoJugadorDao().getTotalRojasVistas(userId).collectAsState(initial = 0)
-
-    val context = LocalContext.current
-    // Se transforman los resultados en modelos visuales reutilizables por la UI.
+    // Adaptación de resultados de base de datos a modelos visuales reutilizables por la UI
     val equiposVistosUi = topEquipos.map {
         TeamStatUi(
             name = it.nombre,
@@ -134,6 +125,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
             iconRes = R.drawable.logo_estadio
         )
     }
+    // Estructura principal de la pantalla con navegación y contenido estadístico
     Scaffold(
         topBar = {
             AppTopBar(
@@ -155,6 +147,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
                 .background(appColors.background)
                 .safeDrawingPadding()
         ) {
+            // Ajustes responsive para adaptar tamaños y espaciados según el dispositivo
             val isSmallScreen = maxWidth < 360.dp || maxHeight < 700.dp
             val horizontalPadding = if (isSmallScreen) 14.dp else 20.dp
             val sectionSpacing = if (isSmallScreen) 18.dp else 24.dp
@@ -171,6 +164,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
                     .navigationBarsPadding(),
                 verticalArrangement = Arrangement.spacedBy(sectionSpacing)
             ) {
+                // Bloques estadísticos reutilizables organizados por categorías
                 StatsSection(
                     title = "Partidos y equipos vistos",
                     totalLabel = "Total de partidos vistos",
@@ -286,7 +280,7 @@ fun StatsScreen(userId: Int, db: AppDatabase, onNavigateBottom: (Int) -> Unit) {
         }
     }
 }
-// Sección reutilizable para mostrar un total principal y una fila horizontal de tarjetas
+// Sección reutilizable formada por un resumen numérico y una lista horizontal de elementos
 @Composable
 private fun StatsSection(
     title: String,
@@ -338,13 +332,13 @@ private fun StatsSection(
         }
     }
 }
- // Modelo visual de equipos vistos
+// Modelo visual utilizado para representar estadísticas de equipos
 data class TeamStatUi(
     val name: String,
     val crestUrl: String?,
     val matchesCount: String
 )
-// Modelo visual de jugadores
+// Modelo visual utilizado para representar estadísticas de jugadores
 data class PlayerStatUi(
     val nombre: String,
     val apellido: String,
@@ -352,12 +346,12 @@ data class PlayerStatUi(
     val flagUrl: String?,
     val stat: String
 )
-// Modelo visual de estadios.
+// Modelo visual utilizado para representar estadios visitados
 data class StadiumStatUi(
     val name: String,
     val iconRes: Int
 )
-// Minicard para equipos con escudo y número de partidos.
+// Tarjeta compacta utilizada para mostrar estadísticas de equipos
 @Composable
 private fun TeamMiniCard(
     item: TeamStatUi,
@@ -410,7 +404,7 @@ private fun TeamMiniCard(
         }
     }
 }
-// Tarjeta compacta para jugadores con avatar, escudo y valor estadístico
+// Tarjeta compacta para representar estadísticas individuales de jugadores
 @Composable
 private fun PlayerMiniStatCard(
     item: PlayerStatUi,
@@ -484,7 +478,7 @@ private fun PlayerMiniStatCard(
         }
     }
 }
-// Tarjeta compacta para estadios vistos
+// Tarjeta compacta utilizada para representar estadios registrados
 @Composable
 private fun StadiumMiniCard(
     item: StadiumStatUi,

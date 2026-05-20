@@ -72,44 +72,41 @@ fun MapScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val db = remember { DatabaseProvider.getDatabase(context) }
-
+    // Repositorios utilizados para acceder a los datos necesarios del mapa
     val estadioRepo = remember { EstadioRepository(db.estadioDao()) }
     val usuarioPartidoRepo = remember { UsuarioPartidoRepository(db.usuarioPartidoDao()) }
     val equipoRepo = remember { EquipoRepository(db.equipoDao()) }
-
+    // Datos reactivos obtenidos desde Room
     val partidosVistos by usuarioPartidoRepo
         .getPartidosByUsuario(userId)
         .collectAsState(initial = emptyList())
-
     val todosEstadios by estadioRepo.getAll().collectAsState(initial = emptyList())
-
+    // Obtiene únicamente los ids de estadios asociados a partidos vistos
     val idsEstadiosVistos = remember(partidosVistos) {
         partidosVistos.mapNotNull { it.idEstadio }.toSet()
     }
-
+    // Filtra únicamente los estadios visitados por el usuario actual
     val estadiosVistos = remember(todosEstadios, idsEstadiosVistos) {
         todosEstadios.filter { it.id in idsEstadiosVistos }
     }
-
+    // Configuración inicial de la cámara del mapa
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(LatLng(48.0, 8.0), 4f)
     }
-
+    // Estado del estadio actualmente seleccionado en el mapa
     var estadioSeleccionado by remember { mutableStateOf<EstadioEntity?>(null) }
-
+    // Información dinámica relacionada con el estadio seleccionado
     val partidosEnEstadio by remember(estadioSeleccionado) {
         estadioSeleccionado?.let {
             usuarioPartidoRepo.countPartidosEnEstadio(userId, it.id)
         } ?: flowOf(0)
     }.collectAsState(initial = 0)
-
-    // Equipos que juegan en el estadio seleccionado
     val equiposEnEstadio by remember(estadioSeleccionado) {
         estadioSeleccionado?.let {
             equipoRepo.getByEstadio(it.id)
         } ?: flowOf(emptyList())
     }.collectAsState(initial = emptyList())
-
+    // Configuración visual e interacción del mapa de Google
     val mapProperties = remember { MapProperties(mapType = MapType.HYBRID) }
     val mapUiSettings = remember {
         MapUiSettings(
@@ -118,7 +115,7 @@ fun MapScreen(
             myLocationButtonEnabled = false
         )
     }
-
+    // Estructura principal de la pantalla del mapa
     Scaffold(
         topBar = { AppTopBar(title = "Mis estadios") },
         bottomBar = { AppBottomBar(selectedIndex = 3, onItemSelected = onNavigateBottom) }
@@ -134,11 +131,11 @@ fun MapScreen(
                 properties = mapProperties,
                 uiSettings = mapUiSettings
             ) {
+                // Generación dinámica de marcadores para cada estadio visitado
                 estadiosVistos.forEach { estadio ->
                     val coords = if (estadio.latitud != null && estadio.longitud != null)
                         LatLng(estadio.latitud, estadio.longitud)
                     else null
-
                     if (coords != null) {
                         Marker(
                             state = MarkerState(position = coords),
@@ -160,7 +157,7 @@ fun MapScreen(
                     }
                 }
             }
-
+            // Mensaje mostrado cuando el usuario todavía no tiene estadios registrados
             if (estadiosVistos.isEmpty()) {
                 Card(
                     modifier = Modifier
@@ -186,7 +183,6 @@ fun MapScreen(
                     }
                 }
             }
-
             if (estadiosVistos.isNotEmpty()) {
                 Card(
                     modifier = Modifier
@@ -205,7 +201,7 @@ fun MapScreen(
                     )
                 }
             }
-
+            // Tarjeta inferior animada con información del estadio seleccionado
             AnimatedVisibility(
                 visible = estadioSeleccionado != null,
                 modifier = Modifier
@@ -233,7 +229,7 @@ fun MapScreen(
         }
     }
 }
-
+// Tarjeta informativa utilizada para mostrar los detalles del estadio seleccionado
 @Composable
 private fun TarjetaEstadio(
     estadio: EstadioEntity,
@@ -272,7 +268,6 @@ private fun TarjetaEstadio(
                     )
                 }
             }
-
             // Equipos con escudo
             if (equipos.isNotEmpty()) {
                 Row(
@@ -302,7 +297,6 @@ private fun TarjetaEstadio(
                     }
                 }
             }
-
             // Capacidad
             estadio.capacidad?.let {
                 Row(
@@ -317,7 +311,6 @@ private fun TarjetaEstadio(
                     )
                 }
             }
-
             // Partidos vistos
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -331,7 +324,6 @@ private fun TarjetaEstadio(
                     fontWeight = FontWeight.SemiBold
                 )
             }
-
             // Dirección
             if (!estadio.direccion.isNullOrBlank()) {
                 Row(

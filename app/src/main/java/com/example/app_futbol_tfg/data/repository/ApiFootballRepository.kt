@@ -17,21 +17,16 @@ import java.util.Locale
 import com.example.app_futbol_tfg.BuildConfig
 import com.example.app_futbol_tfg.data.entity.TemporadaEntity
 import com.example.app_futbol_tfg.data.entity.LocalidadEntity
-import com.example.app_futbol_tfg.data.entity.PaisEntity
 
 private const val TAG = "ApiFootballRepository"
-
-// Repositorio que gestiona la comunicación con API-Football
-// y el guardado de los datos en Room como caché local.
-// Implementa el patrón offline-first: la API alimenta Room,
-// y la UI siempre lee desde Room.
+// Repositorio encargado de sincronizar datos entre API-Football y Room
+// Implementa una arquitectura offline-first donde la API alimenta la base de datos local
+// y la interfaz trabaja siempre sobre datos persistidos en Room
 class ApiFootballRepository(
     private val api: ApiFootballService,
     val db: AppDatabase
 ) {
-
-    // Obtiene los partidos de una liga y temporada desde la API
-    // y los guarda en Room. Devuelve true si tuvo éxito.
+    // Obtiene partidos desde la API y los almacena en Room
     suspend fun fetchAndSaveFixtures(
         apiKey: String,
         leagueId: Int,
@@ -55,8 +50,7 @@ class ApiFootballRepository(
             false
         }
     }
-
-    // Obtiene las competiciones desde la API y las guarda en Room
+    // Sincroniza competiciones desde API-Football hacia la base de datos local
     suspend fun fetchAndSaveLeagues(apiKey: String): Boolean {
         return try {
             val response = api.getLeagues(apiKey)
@@ -76,9 +70,7 @@ class ApiFootballRepository(
             false
         }
     }
-
-    // Obtiene los equipos de una liga y temporada desde la API
-    // y guarda tanto el equipo como su estadio en Room
+    // Sincroniza equipos, estadios y localizaciones asociadas
     suspend fun fetchAndSaveTeams(
         apiKey: String,
         leagueId: Int,
@@ -89,6 +81,7 @@ class ApiFootballRepository(
             if (response.isSuccessful) {
                 val teams = response.body()?.response ?: emptyList()
                 teams.forEach { team ->
+                    // Se asegura la existencia previa de país y localidad antes de insertar relaciones dependientes
                     val nombrePais = team.team.country ?: team.venue?.country
                     val paisEntity = nombrePais?.let { pais ->
                         db.paisDao().getByNombre(pais)
@@ -128,6 +121,7 @@ class ApiFootballRepository(
                     } else {
                         localidadEntity?.id
                     }
+                    // Inserción del estadio asociado al equipo
                     team.toEstadioEntity()?.let { estadio ->
                         db.estadioDao().insert(
                             estadio.copy(
@@ -136,6 +130,7 @@ class ApiFootballRepository(
                             )
                         )
                     }
+                    // Inserción final del equipo con referencias geográficas asociadas
                     db.equipoDao().insert(
                         team.toEquipoEntity().copy(
                             idPais = paisEntity?.id,
@@ -154,9 +149,7 @@ class ApiFootballRepository(
             false
         }
     }
-
-    // Obtiene los jugadores de un equipo y temporada desde la API
-    // y los guarda en Room asignándoles el equipo correspondiente
+    // Descarga y almacena jugadores asociados a un equipo y temporada
     suspend fun fetchAndSavePlayers(
         apiKey: String,
         teamId: Int,
@@ -168,7 +161,7 @@ class ApiFootballRepository(
                 val players = response.body()?.response ?: emptyList()
                 players.forEach { player ->
                     db.jugadorDao().insert(
-                        // Asignamos el equipo al jugador antes de guardarlo
+                        // Se asocia el jugador con su equipo actual antes de persistirlo
                         player.toJugadorEntity().copy(idEquipoActual = teamId)
                     )
                 }
@@ -183,8 +176,7 @@ class ApiFootballRepository(
             false
         }
     }
-    // Obtiene los países desde la API y los guarda en Room.
-    // Si ya existen datos no hace la llamada para ahorrar cuota.
+    // Sincroniza países desde la API evitando llamadas innecesarias si ya existen datos locales
     suspend fun fetchAndSaveCountries(apiKey: String): Boolean {
         return try {
             val existentes = db.paisDao().count()
@@ -209,8 +201,7 @@ class ApiFootballRepository(
             false
         }
     }
-    // Obtiene una competición concreta por su id desde la API y la guarda en Room.
-// Se usa en la carga inicial para cargar solo las ligas seleccionadas.
+    // Descarga una competición concreta utilizada durante la carga inicial de datos.
     suspend fun fetchAndSaveLeagueById(apiKey: String, leagueId: Int): Boolean {
         return try {
             val response = api.getLeagues(apiKey, leagueId)
@@ -230,14 +221,15 @@ class ApiFootballRepository(
             false
         }
     }
-    // Obtiene los partidos de una liga y temporada desde la API  y los guarda en Room. Solo llama a la API si no hay partidos
-    // de esa liga ya en Room para ahorrar cuota.
+    // Sincroniza partidos de una competición concreta
+    // Se evita repetir llamadas ya realizadas para optimizar la cuota de la API
     suspend fun fetchAndSaveFixturesByLeague(
         apiKey: String,
         leagueId: Int,
         season: Int
     ): Boolean {
         return try {
+            // Verificación de sincronización previa para evitar llamadas duplicadas
             val yaSincronizado = db.apiSyncDao().hasSynced("league", leagueId) > 0
             if (yaSincronizado) {
                 Log.d(TAG, "Partidos de liga $leagueId ya sincronizados, omitiendo llamada")
@@ -246,10 +238,11 @@ class ApiFootballRepository(
             val response = api.getFixtures(apiKey, leagueId = leagueId, season = season)
             if (response.isSuccessful) {
                 val fixtures = response.body()?.response ?: emptyList()
-                val finalizados = fixtures.filter { it.fixture.status?.short == "FT" }
+                // Solo se almacenan partidos finalizados
+                val finalizados = fixtures.filter { it.fixture.status.short == "FT" }
                 finalizados.forEach { fixture ->
                     try {
-                        // Buscamos o creamos la temporada en Room
+                        // Se asegura la existencia previa de la temporada antes de insertar el partido
                         val seasonYear = fixture.league.season?.toString() ?: "Desconocida"
                         var temporada = db.temporadaDao().getByTemporada(seasonYear)
                         if (temporada == null) {
@@ -258,7 +251,7 @@ class ApiFootballRepository(
                             )
                             temporada = TemporadaEntity(id = newId.toInt(), temporada = seasonYear)
                         }
-                        // Insertamos el partido con la temporada correcta
+                        // Inserción final del partido con referencias consistentes
                         db.partidoDao().insert(
                             fixture.toPartidoEntity().copy(idTemporada = temporada.id)
                         )
@@ -266,7 +259,7 @@ class ApiFootballRepository(
                         Log.w(TAG, "Partido ${fixture.fixture.id} ignorado por FK inexistente")
                     }
                 }
-                // Registramos que ya hemos consultado esta liga
+                // Registro de sincronización para evitar futuras llamadas redundantes
                 db.apiSyncDao().markAsSynced(
                     ApiSyncEntity(
                         tipo = "league",
@@ -286,7 +279,7 @@ class ApiFootballRepository(
         }
     }
     // Obtiene los partidos de un equipo concreto desde la API y los guarda en Room. Solo llama a la API si no hay partidos
-    // de ese equipo ya en Room para ahorrar cuota.
+    // de ese equipo ya en Room para ahorrar cuota
     suspend fun fetchAndSaveFixturesByTeam(
         apiKey: String,
         teamId: Int,
@@ -304,7 +297,6 @@ class ApiFootballRepository(
                 val finalizados = fixtures.filter { it.fixture.status?.short == "FT" }
                 finalizados.forEach { fixture ->
                     try {
-                        // Buscamos o creamos la temporada en Room
                         val seasonYear = fixture.league.season?.toString() ?: "Desconocida"
                         var temporada = db.temporadaDao().getByTemporada(seasonYear)
                         if (temporada == null) {
@@ -313,7 +305,6 @@ class ApiFootballRepository(
                             )
                             temporada = TemporadaEntity(id = newId.toInt(), temporada = seasonYear)
                         }
-                        // Insertamos el partido con la temporada correcta
                         db.partidoDao().insert(
                             fixture.toPartidoEntity().copy(idTemporada = temporada.id)
                         )
@@ -321,7 +312,6 @@ class ApiFootballRepository(
                         Log.w(TAG, "Partido ${fixture.fixture.id} ignorado por FK inexistente")
                     }
                 }
-                // Registramos que ya hemos consultado este equipo
                 db.apiSyncDao().markAsSynced(
                     ApiSyncEntity(
                         tipo = "team",
@@ -340,7 +330,7 @@ class ApiFootballRepository(
             false
         }
     }
-
+    // Sincroniza jugadores participantes y estadísticas individuales de un partido concreto
     suspend fun fetchAndSaveFixturePlayers(
         apiKey: String,
         fixtureId: Int
@@ -351,6 +341,7 @@ class ApiFootballRepository(
                 Log.d(TAG, "Jugadores del partido $fixtureId ya sincronizados, omitiendo llamada")
                 return true
             }
+            // Consulta detallada de alineaciones y estadísticas del encuentro
             val response = api.getFixturePlayers(BuildConfig.API_FOOTBALL_KEY, fixtureId)
             if (response.isSuccessful) {
                 val equipos = response.body()?.response ?: emptyList()
@@ -363,8 +354,7 @@ class ApiFootballRepository(
                             if (jugador == null || partidoJugador == null) {
                                 return@forEach
                             }
-                            // Solo insertamos jugadores que hayan jugado minutos
-                            // Los convocados que no jugaron tienen minutes == null
+                            // Solo se almacenan jugadores que hayan participado realmente en el partido
                             val minutos = partidoJugador.minutosJugados ?: 0
                             if (minutos == 0) {
                                 return@forEach
@@ -376,6 +366,7 @@ class ApiFootballRepository(
                         }
                     }
                 }
+                // Registro de sincronización completada del partido
                 db.apiSyncDao().markAsSynced(
                     ApiSyncEntity(
                         tipo = "fixture",

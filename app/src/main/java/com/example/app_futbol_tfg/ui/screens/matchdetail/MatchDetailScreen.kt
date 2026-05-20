@@ -47,7 +47,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -56,11 +55,8 @@ import androidx.compose.ui.unit.sp
 import com.example.app_futbol_tfg.R
 import com.example.app_futbol_tfg.data.database.AppDatabase
 import com.example.app_futbol_tfg.ui.components.AppTopBar
-import com.example.app_futbol_tfg.ui.ui.theme.BackgroundLight
-import com.example.app_futbol_tfg.ui.ui.theme.CardBackground
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
 import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
-import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
@@ -84,13 +80,15 @@ private const val TAG = "MatchDetailScreen"
 @Composable
 fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> Unit) {
     val appColors = LocalAppColors.current
+    // Estados locales utilizados para menús, snackbars y operaciones asíncronas.
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val apiRepo = remember { ApiFootballRepositoryProvider.getInstance(db) }
     var menuExpanded by remember { mutableStateOf(false) }
     var showRemoveDialog by remember { mutableStateOf(false) }
-    // Se hace la llamada con el matchId y se guarda el resultado en partido
-    val partidoState = produceState<com.example.app_futbol_tfg.data.entity.PartidoEntity?>(initialValue = null, matchId) {
+    // Carga del partido seleccionado desde Room utilizando produceState.
+    // Se controla el posible fallo de acceso a base de datos para evitar crashes.
+        val partidoState = produceState<com.example.app_futbol_tfg.data.entity.PartidoEntity?>(initialValue = null, matchId) {
         value = try {
             db.partidoDao().getById(matchId)
         } catch (e: SQLiteException) {
@@ -102,7 +100,7 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
         }
     }
     val partido = partidoState.value
-    // Con esto intentamos evitar que haya un crash cuando carga el partido
+    // Mientras el partido todavía no está disponible mostramos una pantalla de carga.
     if (partido == null) {
         Scaffold(
             topBar = {
@@ -130,23 +128,21 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
         }
         return
     }
-    // Cargamos datos auxiliares para utilizar en la pantalla
+    // Datos auxiliares utilizados para construir toda la información relacionada del partido
     val equipos by db.equipoDao().getAll().collectAsState(initial = emptyList())
     val competiciones by db.competicionDao().getAll().collectAsState(initial = emptyList())
     val temporadas by db.temporadaDao().getAll().collectAsState(initial = emptyList())
     val estadios by db.estadioDao().getAll().collectAsState(initial = emptyList())
     val paises by db.paisDao().getAll().collectAsState(initial = emptyList())
     val localidades by db.localidadDao().getAll().collectAsState(initial = emptyList())
-
-    // Transformamos las listas en mapas clave-valor para que el acceso a los datos sea más eficiente y no recorra listas
+    // Conversión de listas a mapas para optimizar búsquedas por identificador
     val equiposMap = equipos.associateBy { it.id }
     val competicionesMap = competiciones.associateBy { it.id }
     val temporadasMap = temporadas.associateBy { it.id }
     val estadiosMap = estadios.associateBy { it.id }
     val paisesMap = paises.associateBy { it.id }
     val localidadesMap = localidades.associateBy { it.id }
-
-    // Esto es el equivalente a un JOIN en SQL. Genera relaciones entre las entidades con los ids almacenados en Partidos
+    // Relaciones equivalentes a los JOIN SQL realizadas manualmente mediante ids
     val equipoLocal = partido.let { equiposMap[it.idEquipoLocal] }
     val equipoVisitante = partido.let { equiposMap[it.idEquipoVisitante] }
     val competicion = partido.idCompeticion?.let { competicionesMap[it] }
@@ -155,8 +151,7 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
     val paisCompeticion = competicion?.idPais?.let { paisesMap[it] }
     val paisEstadio = estadio?.idPais?.let {paisesMap[it]}
     val localidadEstadio = estadio?.idLocalidad?.let { localidadesMap[it] }
-
-    // Este paso nos va a decir si el partido ya está añadido o no
+    // Comprueba si el partido ya pertenece al perfil del usuario actual
     val alreadyAddedState = produceState(initialValue = false, matchId, userId) {
         value = try {
             db.usuarioPartidoDao().getRelacion(userId, matchId) != null
@@ -169,8 +164,7 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
         }
     }
     var alreadyAdded by remember { mutableStateOf(false) }
-    // Al abrir el detalle del partido cargamos los jugadores desde la API
-    // si no están ya en Room para ese partido concreto
+    // Carga bajo demanda de jugadores del partido desde la API.
     LaunchedEffect(matchId) {
         apiRepo.fetchAndSaveFixturePlayers(
             apiKey = BuildConfig.API_FOOTBALL_KEY,
@@ -180,15 +174,14 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
     LaunchedEffect(alreadyAddedState.value) {
         alreadyAdded = alreadyAddedState.value
     }
-    // Cargamos los jugadores que han participado en los partidos desde Room
+    // Recuperación reactiva de jugadores almacenados localmente para este partido.
     val jugadoresPartido by db.jugadorDao().getDetalleByPartido(matchId).collectAsState(initial = emptyList())
-    // Separamos a los jugadores por equipo local y visitante
+    // Separación de los jugadores por equipo local y visitante
     val jugadoresLocales = jugadoresPartido.filter { it.idEquipo == partido.idEquipoLocal }
     val jugadoresVisitantes = jugadoresPartido.filter { it.idEquipo == partido.idEquipoVisitante }
-    // Generamos varuables para los escudos
     val localCrestRes = equipoLocal?.escudo
     val visitanteCrestRes = equipoVisitante?.escudo
-    // Mapeamos a PlayerMatchUI los jugadores tanto locales como visitantes
+    // Adaptación de entidades a modelos visuales utilizados por la UI.
     val localPlayersUi = jugadoresLocales.map { jugador ->
         PlayerMatchUi(
             nombre = jugador.nombre,
@@ -207,6 +200,7 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
             minutosJugados = jugador.minutosJugados
         )
     }
+    // Estructura principal de la pantalla de detalle
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -226,7 +220,7 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                 .background(appColors.background)
                 .safeDrawingPadding()
         ) {
-            // Ajustes adaptativos para distintos tamaños de pantalla
+            // Ajustes responsive según el tamaño del dispositivo
             val isSmallScreen = maxWidth < 360.dp || maxHeight < 700.dp
             val horizontalPadding = if (isSmallScreen) 14.dp else 20.dp
             val sectionSpacing = if (isSmallScreen) 16.dp else 22.dp
@@ -243,6 +237,7 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                     .navigationBarsPadding(),
                 verticalArrangement = Arrangement.spacedBy(sectionSpacing)
             ) {
+                // Menú contextual disponible únicamente cuando el partido ya está añadido
                 if (alreadyAdded) {
                     Row(
                         modifier = Modifier
@@ -273,6 +268,7 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                         }
                     }
                 }
+                // Resumen visual principal del encuentro
                 MatchSummaryCard(
                     partido = partido,
                     equipoLocalNombre = equipoLocal?.nombre ?: "Local",
@@ -288,6 +284,7 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                 val temporadaFormateada = temporada?.temporada?.let { anio ->
                     val anioInt = anio.toIntOrNull()
                     if (anioInt != null) "$anioInt/${anioInt + 1}" else anio } ?: "Temporada"
+                // Información complementaria del partido: competición, temporada y estadio
                 MatchInfoCard(
                     fecha = partido.fecha,
                     temporada = temporadaFormateada,
@@ -316,11 +313,11 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                             fontWeight = FontWeight.SemiBold
                         )
                     )
-                    // En esta fila añadimos los jugadores del equipo local
+                    // En esta fila se añaden los jugadores del equipo local
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            // Añadimos un scroll horizontal para poder ver todos los jugadores
+                            // Se añade un scroll horizontal para poder ver todos los jugadores
                             .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
@@ -338,11 +335,11 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                             fontWeight = FontWeight.SemiBold
                         )
                     )
-                    // En esta fila añadimos los jugadores del equipo visitante
+                    // En esta fila se añaden los jugadores del equipo visitante
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            // Añadimos un scroll horizontal para poder ver todos los jugadores
+                            // Se añade un scroll horizontal para poder ver todos los jugadores
                             .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
@@ -354,7 +351,7 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
                         }
                     }
                 }
-                // Botón para añadir los partidos a nuestro perfil
+                // Permite añadir el partido al perfil personal del usuario
                 Button(
                     onClick = {
                         scope.launch {
@@ -411,6 +408,7 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
             }
         }
     }
+    // Confirmación antes de eliminar el partido del perfil
     if (showRemoveDialog) {
         AlertDialog(
             onDismissRequest = { showRemoveDialog = false },
@@ -452,6 +450,7 @@ fun MatchDetailScreen(matchId: Int, userId: Int, db: AppDatabase, onBack: () -> 
         )
     }
 }
+// Card principal que muestra resultado, escudos y equipos del encuentro
 @Composable
 private fun MatchSummaryCard(
     partido: PartidoEntity,
@@ -556,6 +555,7 @@ private fun MatchSummaryCard(
         }
     }
 }
+// Card informativa con datos adicionales del partido
 @Composable
 private fun MatchInfoCard(
     fecha: String,
@@ -657,7 +657,7 @@ private fun MatchInfoCard(
         }
     }
 }
-// Modelo para los jugadores
+// Modelo visual utilizado para representar jugadores en la UI
 data class PlayerMatchUi(
     val nombre: String,
     val apellido: String,
@@ -665,7 +665,7 @@ data class PlayerMatchUi(
     val titular: Boolean,
     val minutosJugados: Int?
 )
-// Modelo para los jugadores
+// Modelo utilizado para recuperar el detalle extendido de jugadores desde Room
 data class JugadorPartidoDetalle(
     val id: Int,
     val nombre: String,
@@ -675,7 +675,7 @@ data class JugadorPartidoDetalle(
     val titular: Boolean,
     @ColumnInfo(name = "minutos_jugados") val minutosJugados: Int?
 )
-// Minicard horizontal de jugador que muestra el avatar genérico, escudo, nombre
+// Mini card horizontal utilizada para representar cada jugador participante
 @Composable
 private fun PlayerMiniCard(
     player: PlayerMatchUi,
@@ -769,14 +769,14 @@ private fun PlayerMiniCard(
         }
     }
 }
-// Concatena apellido1 y apellido2 si están disponibles.
-// Por ahora los jugadores solo tienen apellido1 en la BBDD, pero la función está preparada para cuando se añada apellido2.
+// Construye el apellido completo del jugador combinando ambos campos disponibles
 private fun getApellidoJugador(
     apellido1: String?,
     apellido2: String? = null
 ): String {
     return listOfNotNull(apellido1, apellido2).joinToString(" ")
 }
+// Separador visual reutilizable entre elementos de información
 @Composable
 private fun DotSeparator() {
     val appColors = LocalAppColors.current

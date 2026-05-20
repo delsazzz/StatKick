@@ -21,8 +21,7 @@ import com.example.app_futbol_tfg.R
 import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
 import androidx.compose.foundation.layout.statusBarsPadding
 
-// Esta función se puede reutilizar para todas las pantallas
-// Muestra título, botón de retroceso y una acción opcional
+// Componente reutilizable utilizado como barra superior común de la aplicación
 @Composable
 fun AppTopBar(
     title: String,
@@ -31,8 +30,6 @@ fun AppTopBar(
     actionIconRes: Int? = null,
     onBackClick: () -> Unit = {},
     onActionClick: () -> Unit = {},
-    // Contenido extra que se renderiza junto al botón de acción
-    // Sirve para anclar el DropdownMenu correctamente
     dropdownContent: @Composable () -> Unit = {}
 ) {
     Row(
@@ -63,7 +60,7 @@ fun AppTopBar(
                 fontWeight = FontWeight.SemiBold
             )
         )
-        // Box que contiene el botón de acción y el dropdown anclado a él
+        // Contenedor del botón de acción y sus elementos asociados.
         if (showActionButton && actionIconRes != null) {
             Box {
                 IconButton(onClick = onActionClick) {
@@ -73,7 +70,6 @@ fun AppTopBar(
                         tint = Color.White
                     )
                 }
-                // El dropdown se renderiza aquí anclado al botón
                 dropdownContent()
             }
         }

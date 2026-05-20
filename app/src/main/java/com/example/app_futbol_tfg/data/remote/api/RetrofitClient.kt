@@ -4,20 +4,15 @@ import com.google.gson.GsonBuilder
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-// Cliente Retrofit configurado como Singleton.
-// Toda la app usa esta única instancia para hacer llamadas a la API.
+// Cliente Retrofit centralizado utilizado para gestionar todas las conexiones HTTP de la aplicación
 object RetrofitClient {
-
-    // URL base de API-Football. Todas las llamadas parten de aquí.
+    // URL base utilizada por Retrofit para construir las peticiones a API-Football
     private const val BASE_URL = "https://v3.football.api-sports.io/"
-
-    // Gson configurado para ser permisivo con valores nulos y tipos inesperados
-    // que puedan venir de la API sin romper el parseo
+    // Configuración de Gson utilizada para convertir automáticamente respuestas JSON en objetos Kotlin
     private val gson = GsonBuilder()
         .serializeNulls()
         .create()
-
-    // Instancia única de Retrofit
+    // Instancia Singleton de Retrofit compartida por toda la aplicación
     val instance: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)

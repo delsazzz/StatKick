@@ -12,7 +12,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// Este es el proveedor único de la BBDD
+// Proveedor único de la BBDD
 // Se aplica el patrón Singleton para garantizar una sola instancia de Room
 object DatabaseProvider {
     private const val TAG = "DatabaseProvider"
@@ -23,9 +23,9 @@ object DatabaseProvider {
             INSTANCE ?: buildDatabase(context).also { INSTANCE = it }
         }
     }
-    // Se crea la instancia de Room y lanza la carga inicial de datos en segundo plano
+    // Crea la instancia de Room y lanza la carga inicial de datos en segundo plano
     private fun buildDatabase(context: Context): AppDatabase {
-        try {
+        return try {
             val instance = Room.databaseBuilder(
                 context.applicationContext,
                 AppDatabase::class.java,
@@ -34,43 +34,8 @@ object DatabaseProvider {
                 // Si cambia el esquema y no existe migración, Room recrea la BBDD
                 .fallbackToDestructiveMigration()
                 .build()
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    // Esto queda comentado porque los datos vienen desde API-Football ahora
-                    CoroutineScope(Dispatchers.IO).launch {
-                        try {
-                            // Insertamos el usuario de demo si no existe
-                            val usuarioExistente = instance.usuarioDao().getById(2)
-                            if (usuarioExistente == null) {
-                                instance.usuarioDao().insert(
-                                    UsuarioEntity(
-                                        id = 2,
-                                        nombreUsuario = "demo",
-                                        email = "demo@tfg.com",
-                                        passwordHash = "demo",
-                                        fechaRegistro = SimpleDateFormat(
-                                            "yyyy-MM-dd",
-                                            Locale.getDefault()
-                                        ).format(Date())
-                                    )
-                                )
-                            }
-                            // SeedData.seed(instance)
-                            // Seed desactivado — los datos se cargan desde API-Football
-                        } catch (e: SQLiteException) {
-                            Log.e(TAG, "Error al ejecutar el seed de la base de datos", e)
-                        } catch (e: IllegalStateException) {
-                            Log.e(TAG, "Estado inválido durante el seed de la base de datos", e)
-                        }
-                    }
-                // SeedData.seed(instance)
-                } catch (e: SQLiteException) {
-                    Log.e(TAG, "Error al ejecutar el seed de la base de datos", e)
-                } catch (e: IllegalStateException) {
-                    Log.e(TAG, "Estado inválido durante el seed de la base de datos", e)
-                }
-            }
-            return instance
+            insertDemoUserIfNeeded(instance)
+            instance
         } catch (e: SQLiteException) {
             Log.e(TAG, "Error al crear la base de datos", e)
             throw e
@@ -78,5 +43,32 @@ object DatabaseProvider {
             Log.e(TAG, "Error de estado al crear la base de datos", e)
             throw e
         }
+    }
+    // Inserta un usuario de prueba solo si todavía no existe
+    // Los datos principales de fútbol se cargan desde API-Football
+    private fun insertDemoUserIfNeeded(db: AppDatabase) {
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val usuarioExistente = db.usuarioDao().getById(2)
+                    if (usuarioExistente == null) {
+                        db.usuarioDao().insert(
+                            UsuarioEntity(
+                                id = 2,
+                                nombreUsuario = "demo",
+                                email = "demo@tfg.com",
+                                passwordHash = "demo",
+                                fechaRegistro = SimpleDateFormat(
+                                    "yyyy-MM-dd",
+                                    Locale.getDefault()
+                                ).format(Date())
+                            )
+                        )
+                    }
+                } catch (e: SQLiteException) {
+                    Log.e(TAG, "Error al ejecutar el seed de la base de datos", e)
+                } catch (e: IllegalStateException) {
+                    Log.e(TAG, "Estado inválido durante el seed de la base de datos", e)
+                }
+            }
     }
 }

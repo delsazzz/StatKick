@@ -11,6 +11,7 @@ class BaseViewModelFactory<T : ViewModel>(
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <VM : ViewModel> create(modelClass: Class<VM>): VM {
+        // Comprueba que la clase solicitada corresponde al ViewModel esperado
         if (modelClass.isAssignableFrom(viewModelClass)) {
             return creator() as VM
         }

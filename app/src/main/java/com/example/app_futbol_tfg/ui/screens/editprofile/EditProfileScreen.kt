@@ -34,28 +34,28 @@ fun EditProfileScreen(
     onBack: () -> Unit
 ) {
     val appColors = LocalAppColors.current
+    // Estados y corrutinas utilizados para gestionar la edición del perfil
     val scope = rememberCoroutineScope()
     val usuario by db.usuarioDao().getByIdFlow(userId).collectAsState(initial = null)
-
     var nombreUsuario by remember { mutableStateOf("") }
     var selectedAvatar by remember { mutableStateOf("profile_user") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
-
+    // Sincroniza los datos actuales del usuario con los estados locales de la pantalla
     LaunchedEffect(usuario) {
         usuario?.let {
             nombreUsuario = it.nombreUsuario
             selectedAvatar = it.avatar
         }
     }
-
+    // Avatares disponibles que el usuario puede seleccionar
     val avatarOptions = listOf(
         "profile_user" to R.drawable.profile_user,
         "profile_user_1" to R.drawable.avatar_cristiano_ronaldo,
         "profile_user_2" to R.drawable.avatar_messi,
         "profile_user_3" to R.drawable.avatar_uche
     )
-
+    // Estructura principal de la pantalla de edición de perfil
     Scaffold(
         topBar = {
             AppTopBar(
@@ -66,7 +66,6 @@ fun EditProfileScreen(
         },
         containerColor = appColors.background
     ) { innerPadding ->
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -103,9 +102,9 @@ fun EditProfileScreen(
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // Selector horizontal de avatares disponibles
                         avatarOptions.forEach { avatar ->
                             val isSelected = selectedAvatar == avatar.first
-
                             Box(
                                 modifier = Modifier
                                     .size(if (isSelected) 82.dp else 70.dp)
@@ -130,7 +129,6 @@ fun EditProfileScreen(
                             }
                         }
                     }
-
                     CustomTextField(
                         value = nombreUsuario,
                         onValueChange = {
@@ -140,7 +138,6 @@ fun EditProfileScreen(
                         label = "Nombre de usuario",
                         isError = errorMessage != null
                     )
-
                     errorMessage?.let {
                         Text(
                             text = it,
@@ -148,36 +145,30 @@ fun EditProfileScreen(
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
-
+                    // Validación y actualización de los datos del perfil del usuario
                     PrimaryButton(
                         text = "Guardar cambios",
                         isLoading = isLoading,
                         onClick = {
                             scope.launch {
                                 val nuevoNombre = nombreUsuario.trim()
-
                                 if (nuevoNombre.isBlank()) {
                                     errorMessage = "El nombre de usuario no puede estar vacío"
                                     return@launch
                                 }
-
                                 isLoading = true
-
                                 val existe = db.usuarioDao()
                                     .existeNombreUsuarioEnOtroUsuario(nuevoNombre, userId)
-
                                 if (existe) {
                                     errorMessage = "Ese nombre de usuario ya está en uso"
                                     isLoading = false
                                     return@launch
                                 }
-
                                 db.usuarioDao().actualizarPerfil(
                                     userId = userId,
                                     nuevoNombre = nuevoNombre,
                                     nuevoAvatar = selectedAvatar
                                 )
-
                                 isLoading = false
                                 onBack()
                             }

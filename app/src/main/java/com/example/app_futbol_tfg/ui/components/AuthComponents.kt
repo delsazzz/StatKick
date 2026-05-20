@@ -31,7 +31,7 @@ import com.example.app_futbol_tfg.ui.ui.theme.PrimaryBlue
 import com.example.app_futbol_tfg.ui.ui.theme.TextPrimary
 import com.example.app_futbol_tfg.ui.ui.theme.TextSecondary
 
-// Campo de texto reutilizable para formularios de autenticación
+// Campo de texto reutilizable utilizado en formularios de autenticación y edición
 @Composable
 fun CustomTextField(
     value: String,
@@ -42,6 +42,7 @@ fun CustomTextField(
     isError: Boolean = false,
     errorMessage: String? = null
 ) {
+    // Configuración visual común para los campos de entrada de la aplicación
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
@@ -67,8 +68,7 @@ fun CustomTextField(
         )
     )
 }
-
-// Campo de contraseña con opción de mostrar u ocultar el texto
+// Campo de contraseña reutilizable con visibilidad configurable
 @Composable
 fun PasswordTextField(
     value: String,
@@ -78,6 +78,7 @@ fun PasswordTextField(
     isError: Boolean = false,
     errorMessage: String? = null
 ) {
+    // Controla si la contraseña se muestra en texto plano o enmascarada
     var passwordVisible by remember { mutableStateOf(false) }
     OutlinedTextField(
         value = value,
@@ -95,7 +96,7 @@ fun PasswordTextField(
             PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         trailingIcon = {
-            // Icono para mostrar u ocultar la contraseña
+            // Botón utilizado para alternar la visibilidad de la contraseña
             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                 Icon(
                     painter = painterResource(
@@ -122,8 +123,7 @@ fun PasswordTextField(
         )
     )
 }
-
-// Botón principal reutilizable con soporte para estado de carga
+// Botón principal reutilizable utilizado en acciones importantes de la aplicación
 @Composable
 fun PrimaryButton(
     text: String,
@@ -147,7 +147,7 @@ fun PrimaryButton(
         )
     ) {
         if (isLoading) {
-            // Indicador de carga mientras se procesa la petición
+            // Indicador visual mostrado mientras se ejecuta una operación asíncrona
             CircularProgressIndicator(
                 color = Color.White,
                 strokeWidth = 2.dp,
