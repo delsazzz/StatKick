@@ -69,7 +69,7 @@ Además, integra datos reales mediante API-Football y muestra geográficamente l
 
 La aplicación está desarrollada siguiendo la arquitectura MVVM (Model-View-ViewModel), separando claramente la lógica de negocio, la gestión de datos y la interfaz de usuario.
 
-![Arquitectura](screenshots/architecture.png)
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/461983d3-b30d-485c-a045-c7f7759963e4" />
 
 ### Capas principales
 
@@ -110,7 +110,7 @@ Entidades principales:
 
 Además, se implementan relaciones muchos-a-muchos mediante tablas intermedias.
 
-![Modelo ER](screenshots/database-model.png)
+<img width="2048" height="1462" alt="image" src="https://github.com/user-attachments/assets/96d09b0b-9c27-49ba-8c67-2a72a1ca160e" />
 
 ---
 
@@ -169,27 +169,27 @@ Los datos obtenidos se almacenan localmente para permitir el funcionamiento incl
 
 ## Pantalla Splash
 
-![Splash](screenshots/splash.png)
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/4da7a0f6-fe1b-4f5b-9d7e-d472f8139cdf" />
 
 ## Inicio de sesión
 
-![Login](screenshots/login.png)
+<img width="1024" height="1536" alt="image" src="https://github.com/user-attachments/assets/1cfb4af3-a151-42f0-842c-2359bac24ceb" />
 
 ## Registro
 
-![Register](screenshots/register.png)
+<img width="1024" height="1536" alt="image" src="https://github.com/user-attachments/assets/20b4170b-4238-406e-9c6a-0ecae129431b" />
 
 ## Perfil de usuario
 
-![Home](screenshots/home.png)
+<img width="1024" height="1536" alt="image" src="https://github.com/user-attachments/assets/d219ea36-a5e0-48bb-8562-9cbf095bb766" />
 
 ## Estadísticas
 
-![Stats](screenshots/stats.png)
+<img width="1024" height="1536" alt="image" src="https://github.com/user-attachments/assets/562e19e4-6ae6-4b42-92b5-153e9427d77b" />
 
 ## Mapa de estadios
 
-![Map](screenshots/map.png)
+<img width="1055" height="1491" alt="image" src="https://github.com/user-attachments/assets/55dbfd24-053c-41cf-896b-82e288dc8121" />
 
 ---
 
